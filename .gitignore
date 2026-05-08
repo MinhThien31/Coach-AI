@@ -8,5 +8,6 @@ dist/
 build/
 .venv/
 .env
+.DS_Store
 tests/fixtures/videos/*.mp4
 !tests/fixtures/videos/.gitkeep
