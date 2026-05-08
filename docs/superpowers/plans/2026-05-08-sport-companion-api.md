@@ -1022,7 +1022,7 @@ def test_analyze_too_large_returns_413(client):
     data = {"exercise": "squat"}
     r = client.post("/analyze", files=files, data=data)
     assert r.status_code == 413
-    assert r.json()["detail"]["error"] == "video_too_large"
+    assert r.json()["error"] == "video_too_large"
 
 
 def test_analyze_too_long_returns_413(client):

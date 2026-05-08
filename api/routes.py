@@ -3,11 +3,10 @@ from __future__ import annotations
 
 import asyncio
 import os
-import shutil
 import tempfile
 
 import cv2
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
@@ -34,22 +33,19 @@ async def list_exercises() -> dict[str, list[str]]:
     return {"exercises": sorted(EXERCISE_REGISTRY.keys())}
 
 
-def _stream_to_temp(upload: UploadFile, max_bytes: int) -> str:
-    """Stream `upload` into a NamedTemporaryFile. Raise HTTPException(413)
-    mid-stream if size exceeds max_bytes. Return the temp file path on disk."""
+def _stream_to_temp(upload: UploadFile, max_bytes: int) -> str | None:
+    """Stream `upload` into a NamedTemporaryFile in 1 MiB chunks. Return the
+    temp file path on success, or `None` if the upload exceeds `max_bytes`
+    (in which case the temp file is unlinked before returning)."""
     tmp = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
     written = 0
     try:
-        while chunk := upload.file.read(1 << 20):  # 1 MiB chunks
+        while chunk := upload.file.read(1 << 20):
             written += len(chunk)
             if written > max_bytes:
                 tmp.close()
                 os.unlink(tmp.name)
-                raise HTTPException(
-                    status_code=413,
-                    detail={"error": "video_too_large",
-                            "detail": f"max {max_bytes // (1 << 20)} MB"},
-                )
+                return None
             tmp.write(chunk)
     finally:
         tmp.close()
@@ -81,6 +77,12 @@ async def analyze(
 ) -> AnalysisReport:
     max_bytes = settings.max_upload_mb * (1 << 20)
     tmp_path = _stream_to_temp(video, max_bytes)
+    if tmp_path is None:
+        return JSONResponse(
+            status_code=413,
+            content={"error": "video_too_large",
+                     "detail": f"max {settings.max_upload_mb} MB"},
+        )
     try:
         duration_s = _video_duration_seconds(tmp_path)
         if duration_s > settings.max_video_seconds:
