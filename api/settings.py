@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class Settings:
     max_upload_mb: int
     max_video_seconds: int
-    cors_origins: list[str]
+    cors_origins: tuple[str, ...]
     nvidia_api_key: str | None
 
     @classmethod
@@ -17,10 +17,10 @@ class Settings:
         return cls(
             max_upload_mb=int(os.getenv("API_MAX_UPLOAD_MB", "100")),
             max_video_seconds=int(os.getenv("API_MAX_VIDEO_SECONDS", "60")),
-            cors_origins=[
+            cors_origins=tuple(
                 o.strip()
                 for o in os.getenv("API_CORS_ORIGINS", "*").split(",")
                 if o.strip()
-            ],
+            ),
             nvidia_api_key=os.getenv("NVIDIA_API_KEY") or None,
         )

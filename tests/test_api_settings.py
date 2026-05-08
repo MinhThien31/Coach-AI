@@ -13,7 +13,7 @@ def test_defaults_when_no_env(monkeypatch):
     s = Settings.from_env()
     assert s.max_upload_mb == 100
     assert s.max_video_seconds == 60
-    assert s.cors_origins == ["*"]
+    assert s.cors_origins == ("*",)
     assert s.nvidia_api_key is None
 
 
@@ -25,11 +25,17 @@ def test_overrides_from_env(monkeypatch):
     s = Settings.from_env()
     assert s.max_upload_mb == 25
     assert s.max_video_seconds == 30
-    assert s.cors_origins == ["http://localhost:3000", "http://localhost:5173"]
+    assert s.cors_origins == ("http://localhost:3000", "http://localhost:5173")
     assert s.nvidia_api_key == "nvapi-test"
 
 
-def test_invalid_int_falls_back_to_default(monkeypatch):
+def test_invalid_int_raises(monkeypatch):
     monkeypatch.setenv("API_MAX_UPLOAD_MB", "not-a-number")
     with pytest.raises(ValueError):
         Settings.from_env()
+
+
+def test_empty_cors_origins_env(monkeypatch):
+    monkeypatch.setenv("API_CORS_ORIGINS", "")
+    s = Settings.from_env()
+    assert s.cors_origins == ()
