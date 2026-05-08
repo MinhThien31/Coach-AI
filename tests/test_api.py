@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from api.main import app
 from api.settings import Settings
+from sport_companion_ai.errors import UnsupportedExerciseError, VideoReadError
 from sport_companion_ai.report import (
     AnalysisReport, SkeletonSchema, VideoMeta,
 )
@@ -77,3 +78,38 @@ def test_analyze_happy_path_returns_report_json(client):
     assert isinstance(args[0], str) and args[0].endswith(".mp4")
     # the temp file should have been cleaned up
     assert not Path(args[0]).exists()
+
+
+def test_analyze_missing_exercise_returns_422(client):
+    files = {"video": ("squat.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    r = client.post("/analyze", files=files)  # no `data`
+    assert r.status_code == 422
+
+
+def test_analyze_unknown_exercise_returns_400(client):
+    client.app.state.analyzer_default.analyze.side_effect = UnsupportedExerciseError(
+        "Unknown exercise: 'flying'",
+    )
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": "flying"}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 400
+    assert r.json()["error"] == "unsupported_exercise"
+
+
+def test_analyze_corrupt_video_returns_400(client):
+    client.app.state.analyzer_default.analyze.side_effect = VideoReadError(
+        "could not open video",
+    )
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": "squat"}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 400
+    assert r.json()["error"] == "video_read_failed"
+
+
+def test_analyze_invalid_skeleton_output_returns_422(client):
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": "squat", "skeleton_output": "bogus"}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 422
