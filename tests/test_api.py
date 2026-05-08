@@ -201,9 +201,16 @@ def test_analyze_serializes_concurrent_requests(client):
 
     client.app.state.analyzer_default.analyze.side_effect = slow_analyze
 
-    # Both threads must share the same event-loop portal so that asyncio.Lock
-    # serialises them. Inject a shared portal directly (bypasses lifespan so
-    # MediaPipe is never loaded) and recreate the lock inside that loop.
+    # Why the portal gymnastics: TestClient, when called from two threads
+    # without a shared portal, spins up a fresh anyio event loop per call.
+    # asyncio.Lock instances are loop-bound, so the two locks would never
+    # block each other and the test would be a permanent false positive
+    # regardless of whether `async with lock:` is present in the route.
+    #
+    # Starlette 1.x exposes `client.portal` as a public typed attribute
+    # (BlockingPortal | None). When set, _portal_factory yields it instead
+    # of spawning a new loop, so both threads share one event loop and the
+    # asyncio.Lock in app.state serialises them correctly.
     import anyio.from_thread as _af
 
     with _af.start_blocking_portal(backend="asyncio") as portal:
