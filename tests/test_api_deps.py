@@ -22,8 +22,8 @@ def test_providers_read_from_app_state():
     fake_request = Request({"type": "http", "app": app})
 
     assert get_settings(fake_request) is app.state.settings
-    assert get_default_analyzer(fake_request) == "DEF"
-    assert get_enriched_analyzer(fake_request) == "ENR"
+    assert get_default_analyzer(fake_request) is app.state.analyzer_default
+    assert get_enriched_analyzer(fake_request) is app.state.analyzer_enriched
     assert get_lock(fake_request) is app.state.lock
 
 
