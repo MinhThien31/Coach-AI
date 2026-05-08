@@ -143,3 +143,40 @@ def test_analyze_too_long_returns_413(client):
     assert r.json()["error"] == "video_too_long"
     # analyzer must NOT have been called when duration check fails
     client.app.state.analyzer_default.analyze.assert_not_called()
+
+
+@pytest.mark.parametrize("mode", ["full", "sampled", "keyframes", "none"])
+def test_analyze_passes_skeleton_output_through(client, mode):
+    client.app.state.analyzer_default.analyze.return_value = _fake_report()
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": "squat", "skeleton_output": mode}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 200
+    _, kwargs = client.app.state.analyzer_default.analyze.call_args
+    assert kwargs["skeleton_output"] == mode
+
+
+def test_enrich_true_uses_enriched_analyzer_when_present(client):
+    enriched = MagicMock()
+    enriched.analyze.return_value = _fake_report()
+    client.app.state.analyzer_enriched = enriched
+
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": "squat", "enrich": "true"}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 200
+    enriched.analyze.assert_called_once()
+    client.app.state.analyzer_default.analyze.assert_not_called()
+
+
+def test_enrich_true_without_key_falls_back_with_warning(client):
+    # analyzer_enriched stays None (set by the fixture).
+    fake = _fake_report()
+    client.app.state.analyzer_default.analyze.return_value = fake
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": "squat", "enrich": "true"}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 200
+    body = r.json()
+    codes = {w["code"] for w in body["warnings"]}
+    assert "ENRICHMENT_FAILED" in codes
