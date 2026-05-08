@@ -25,9 +25,15 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(VideoReadError)
     async def _video_read(request: Request, exc: VideoReadError):
+        # Log the underlying detail server-side; the client gets a stable
+        # generic message so we don't leak filesystem paths or other internals.
+        log.warning("video_read_failed: %s", exc)
         return JSONResponse(
             status_code=400,
-            content={"error": "video_read_failed", "detail": str(exc)},
+            content={
+                "error": "video_read_failed",
+                "detail": "cannot read uploaded file as video",
+            },
         )
 
     @app.exception_handler(PoseExtractionError)

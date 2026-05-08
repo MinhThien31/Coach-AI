@@ -45,7 +45,10 @@ def test_video_read_maps_to_400():
     client = TestClient(_build_app())
     r = client.get("/raise-video")
     assert r.status_code == 400
-    assert r.json() == {"error": "video_read_failed", "detail": "bad"}
+    assert r.json() == {
+        "error": "video_read_failed",
+        "detail": "cannot read uploaded file as video",
+    }
 
 
 def test_pose_extraction_maps_to_500():
