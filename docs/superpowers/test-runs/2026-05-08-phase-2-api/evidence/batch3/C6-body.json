@@ -1,0 +1,1 @@
+{"detail":[{"type":"bool_parsing","loc":["body","enrich"],"msg":"Input should be a valid boolean, unable to interpret input","input":"not-a-bool"}]}

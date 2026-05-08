@@ -1,0 +1,1 @@
+{"detail":[{"type":"literal_error","loc":["body","skeleton_output"],"msg":"Input should be 'full', 'sampled', 'keyframes' or 'none'","input":"invalid_mode","ctx":{"expected":"'full', 'sampled', 'keyframes' or 'none'"}}]}

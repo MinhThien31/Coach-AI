@@ -1,0 +1,14 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0    804      0 --:--:-- --:--:-- --:--:--  1000
+HTTP/1.1 200 OK
+date: Fri, 08 May 2026 10:27:37 GMT
+server: uvicorn
+access-control-allow-origin: *
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-headers: Content-Type
+content-length: 2
+content-type: text/plain; charset=utf-8
+
+OK

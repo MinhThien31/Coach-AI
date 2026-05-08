@@ -1,0 +1,13 @@
+=== HTTP Headers ===
+HTTP/1.1 200 OK
+date: Fri, 08 May 2026 10:27:43 GMT
+server: uvicorn
+content-length: 6467
+content-type: application/json
+
+
+=== Parsed Fields ===
+title: Sport Companion AI API
+version: 0.1.0
+paths: ['/analyze', '/exercises', '/health']
+analyze methods: ['post']
