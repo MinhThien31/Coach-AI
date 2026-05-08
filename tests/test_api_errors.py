@@ -56,6 +56,8 @@ def test_pose_extraction_maps_to_500():
 
 
 def test_generic_exception_maps_to_500():
+    # raise_server_exceptions=False is required: by default TestClient re-raises
+    # uncaught exceptions before Starlette dispatches the catch-all handler.
     client = TestClient(_build_app(), raise_server_exceptions=False)
     r = client.get("/raise-other")
     assert r.status_code == 500
