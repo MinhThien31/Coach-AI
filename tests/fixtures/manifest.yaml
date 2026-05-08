@@ -1,37 +1,114 @@
 # Fixture-video integration test expectations.
-# Tests assert ranges (not exact numbers) to absorb pose-detection jitter
-# and small camera-angle variation.
+# Tests assert ranges (not exact numbers) to absorb pose-detection jitter and
+# small camera-angle variation. Each entry maps a real Pexels stock video to
+# the pipeline's actual observed output, with notes describing what each
+# scenario exercises.
 #
-# These ranges are calibrated against actual pipeline output on Pexels stock
-# videos. The thresholds in the rule classes are still spec-default; if/when
-# they're tuned (Phase 2), these ranges may need to widen.
+# Source URL (Pexels) is recorded so fixtures can be re-downloaded if lost.
+# Videos themselves are gitignored (tests/fixtures/videos/*.mp4).
+#
+# To re-download all fixtures:
+#   cd tests/fixtures/videos
+#   yt-dlp -f "best[height<=720]/best" -o "<id>.%(ext)s" <pexels_url>
 
+# ── Squats ────────────────────────────────────────────────────────────────
 squat_woman_pexels:
   path: videos/squat_woman_pexels.mp4
   exercise: squat
+  source: https://www.pexels.com/video/woman-doing-squats-in-the-gym-6980765/
   expected_reps: { min: 1, max: 4 }
   expected_avg_score: { min: 50, max: 100 }
   notes: |
-    Pexels stock, woman doing bodyweight squats, partly front-facing camera.
-    The front angle inflates knee_valgus_ratio (false-positive SQUAT_KNEE_VALGUS).
-    Useful as a real-video smoke test — proves pose extraction + rep detection +
-    rule evaluation run end-to-end on in-the-wild footage.
+    Woman doing bodyweight squats, partly front-facing camera. The front angle
+    inflates knee_valgus_ratio (false-positive SQUAT_KNEE_VALGUS). Smoke test
+    that pose extraction + rep detection + rule eval run on real footage.
 
 squat_man_olympic:
   path: videos/squat_man_olympic.mp4
   exercise: squat
+  source: https://www.pexels.com/video/a-man-doing-doing-squats-in-the-gym-6980132/
   expected_reps: { min: 1, max: 6 }
   expected_avg_score: { min: 50, max: 100 }
+  required_issues_present: [SQUAT_BACK_TOO_VERTICAL]
   notes: |
-    Pexels stock, man doing deep Olympic-style squats. Back is intentionally
-    vertical (Oly bias), which trips SQUAT_BACK_TOO_VERTICAL — that's correct
-    behaviour relative to the strength-coaching default range (30°-60°).
+    Man doing deep Olympic-style squats. Back is intentionally vertical (Oly
+    bias), which trips SQUAT_BACK_TOO_VERTICAL — that's correct behavior
+    relative to the strength-coaching default range (30°-60°).
 
+squat_barbell_side:
+  path: videos/squat_barbell_side.mp4
+  exercise: squat
+  source: https://www.pexels.com/video/man-performing-barbell-squats-at-gym-35585586/
+  expected_reps: { min: 1, max: 4 }
+  expected_avg_score: { min: 50, max: 100 }
+  notes: |
+    Side-view loaded barbell squat. Pipeline detects 1 rep and flags VALGUS;
+    real video shows clean form, so this is a known false-positive caused by
+    foreshortening of the far leg from a 3/4 angle. Tuning the valgus check
+    to use only the near-leg ratio is Phase 2 work.
+
+squat_emptybar:
+  path: videos/squat_emptybar.mp4
+  exercise: squat
+  source: https://www.pexels.com/video/man-shoulder-squats-with-an-empty-barbell-6114481/
+  expected_reps: { min: 2, max: 5 }
+  expected_avg_score: { min: 50, max: 100 }
+  notes: |
+    Empty-barbell shoulder squats — shows multi-rep detection working on
+    real footage (3 reps consistently detected). Camera-angle false positives
+    on back angle and valgus are the same as the other front-ish-camera squats.
+
+# ── Deadlift ──────────────────────────────────────────────────────────────
+deadlift_man:
+  path: videos/deadlift_man.mp4
+  exercise: deadlift
+  source: https://www.pexels.com/video/young-man-lifting-bar-in-deadlift-9778003/
+  expected_reps: { min: 1, max: 5 }
+  expected_avg_score: { min: 40, max: 100 }
+  notes: |
+    Young man performing deadlifts. Pipeline flags BACK_ROUND (HIGH) — this
+    may be a true issue (mild rounding under load is common) or a false
+    positive from shoulder-x vs hip-x measurement when bar partially blocks
+    the side view. Also flags PARTIAL_LOCKOUT consistently. Useful as a
+    "pipeline correctly fires HIGH-severity rules" smoke test.
+
+# ── Bench press ───────────────────────────────────────────────────────────
+bench_woman:
+  path: videos/bench_woman.mp4
+  exercise: bench_press
+  source: https://www.pexels.com/video/woman-bench-pressing-weights-in-gym-setting-32239226/
+  expected_reps: { min: 1, max: 3 }
+  expected_passed_reps: { min: 1, max: 3 }
+  expected_avg_score: { min: 80, max: 100 }
+  required_issues_absent: [BENCH_PARTIAL_ROM, BENCH_ELBOW_FLARE]
+  notes: |
+    Cleanest fixture so far — woman bench-pressing, side-on, full ROM.
+    Pipeline correctly returns score 95 with only a minor BENCH_ASYMMETRY
+    warning. Demonstrates the rule engine produces high-confidence "good
+    rep" verdicts when the camera angle and form are both clean.
+
+# ── Push-up ───────────────────────────────────────────────────────────────
 pushup_incline:
   path: videos/pushup_incline.mp4
   exercise: push_up
+  source: https://www.pexels.com/video/man-doing-incline-push-ups-6388865/
   expected_reps: { min: 3, max: 25 }
   notes: |
-    Pexels stock, incline push-ups. The incline angle of the body shifts the
+    Incline push-ups. The incline angle of the body shifts the
     shoulder/hip/ankle midline so PUSHUP_HIP_SAG fires consistently — also
-    expected with a flat-ground threshold; tuning per setup is Phase 2 work.
+    expected with a flat-ground threshold; tuning per setup is Phase 2.
+
+# ── Bicep curl ────────────────────────────────────────────────────────────
+curl_dumbbell:
+  path: videos/curl_dumbbell.mp4
+  exercise: bicep_curl
+  source: https://www.pexels.com/video/a-man-doing-dumbbell-curls-6547801/
+  expected_reps: { min: 4, max: 12 }
+  expected_passed_reps: { min: 4, max: 12 }
+  expected_avg_score: { min: 70, max: 100 }
+  notes: |
+    Dumbbell curls — strongest multi-rep fixture: 7 reps detected, all 7
+    pass with avg score ~83. Some CURL_ELBOW_DRIFT and CURL_TOO_FAST
+    flagged, both LOW/MEDIUM severity, do not block the pass verdict.
+    Confirms the rule engine handles multi-rep flow correctly when the
+    camera angle and exercise type are both clean.
