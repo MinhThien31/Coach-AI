@@ -64,7 +64,8 @@ NvidiaNimEnricher(api_key=..., model="meta/llama-3.3-70b-instruct")
 
 ```bash
 docker build -t sport-companion-ai .
-docker run --rm -v "$PWD":/data sport-companion-ai /data/squat.mp4 --exercise squat
+docker run --rm -v "$PWD":/data sport-companion-ai \
+  python examples/analyze_squat.py /data/squat.mp4 --exercise squat
 ```
 
 ## Quick start (HTTP API — Phase 2)
@@ -159,10 +160,9 @@ See `sport_companion_ai/` for source. Each subpackage has one responsibility:
 - `feedback/` — enrichment plug-ins
 - `viz/` — dev rendering helpers
 
-## Phase 2 (planned)
+## Phase 3 (planned)
 
 - Real-time / streaming mode
 - Fitness-AQA pretrained-model integration
 - YOLO11-pose backend
-- REST API wrapper
 - Beyond 5 exercises

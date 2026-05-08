@@ -47,9 +47,15 @@ def _stream_to_temp(upload: UploadFile, max_bytes: int) -> str | None:
                 os.unlink(tmp.name)
                 return None
             tmp.write(chunk)
-    finally:
         tmp.close()
-    return tmp.name
+        return tmp.name
+    except BaseException:
+        tmp.close()
+        try:
+            os.unlink(tmp.name)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def _video_duration_seconds(path: str) -> float:
