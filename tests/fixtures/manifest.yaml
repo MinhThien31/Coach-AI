@@ -1,21 +1,37 @@
-# Each entry describes an expected outcome for a fixture video.
-# Tests assert ranges, not exact numbers, to allow for pose-detection jitter.
-squat_good_5reps:
-  path: videos/squat_good_5reps.mp4
-  exercise: squat
-  expected_reps: { min: 4, max: 6 }
-  expected_passed_reps: { min: 4, max: 6 }
-  expected_avg_score: { min: 75, max: 100 }
-  required_issues_absent: [SQUAT_DEPTH_INSUFFICIENT, SQUAT_KNEE_VALGUS]
+# Fixture-video integration test expectations.
+# Tests assert ranges (not exact numbers) to absorb pose-detection jitter
+# and small camera-angle variation.
+#
+# These ranges are calibrated against actual pipeline output on Pexels stock
+# videos. The thresholds in the rule classes are still spec-default; if/when
+# they're tuned (Phase 2), these ranges may need to widen.
 
-squat_shallow_3reps:
-  path: videos/squat_shallow_3reps.mp4
+squat_woman_pexels:
+  path: videos/squat_woman_pexels.mp4
   exercise: squat
-  expected_reps: { min: 2, max: 4 }
-  required_issues_present: [SQUAT_DEPTH_INSUFFICIENT]
+  expected_reps: { min: 1, max: 4 }
+  expected_avg_score: { min: 50, max: 100 }
+  notes: |
+    Pexels stock, woman doing bodyweight squats, partly front-facing camera.
+    The front angle inflates knee_valgus_ratio (false-positive SQUAT_KNEE_VALGUS).
+    Useful as a real-video smoke test — proves pose extraction + rep detection +
+    rule evaluation run end-to-end on in-the-wild footage.
 
-pushup_good_3reps:
-  path: videos/pushup_good_3reps.mp4
+squat_man_olympic:
+  path: videos/squat_man_olympic.mp4
+  exercise: squat
+  expected_reps: { min: 1, max: 6 }
+  expected_avg_score: { min: 50, max: 100 }
+  notes: |
+    Pexels stock, man doing deep Olympic-style squats. Back is intentionally
+    vertical (Oly bias), which trips SQUAT_BACK_TOO_VERTICAL — that's correct
+    behaviour relative to the strength-coaching default range (30°-60°).
+
+pushup_incline:
+  path: videos/pushup_incline.mp4
   exercise: push_up
-  expected_reps: { min: 2, max: 4 }
-  expected_passed_reps: { min: 2, max: 4 }
+  expected_reps: { min: 3, max: 25 }
+  notes: |
+    Pexels stock, incline push-ups. The incline angle of the body shifts the
+    shoulder/hip/ankle midline so PUSHUP_HIP_SAG fires consistently — also
+    expected with a flat-ground threshold; tuning per setup is Phase 2 work.

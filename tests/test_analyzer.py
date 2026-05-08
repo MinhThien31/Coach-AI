@@ -7,7 +7,6 @@ from sport_companion_ai.analyzer import VideoAnalyzer
 from sport_companion_ai.errors import UnsupportedExerciseError
 from sport_companion_ai.pose.schema import Frame, Keypoint, Skeleton
 from sport_companion_ai.report import VideoMeta
-from sport_companion_ai.sampling import SkeletonOutputMode
 from tests.exercises._helpers import make_squat_rep_frames
 
 
