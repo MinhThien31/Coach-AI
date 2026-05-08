@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import io
+import threading
+import time as _time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -180,3 +182,46 @@ def test_enrich_true_without_key_falls_back_with_warning(client):
     body = r.json()
     codes = {w["code"] for w in body["warnings"]}
     assert "ENRICHMENT_FAILED" in codes
+
+
+def test_analyze_serializes_concurrent_requests(client):
+    in_flight = 0
+    max_in_flight = 0
+    lock_for_counter = threading.Lock()
+
+    def slow_analyze(*args, **kwargs):
+        nonlocal in_flight, max_in_flight
+        with lock_for_counter:
+            in_flight += 1
+            max_in_flight = max(max_in_flight, in_flight)
+        _time.sleep(0.2)
+        with lock_for_counter:
+            in_flight -= 1
+        return _fake_report()
+
+    client.app.state.analyzer_default.analyze.side_effect = slow_analyze
+
+    # Both threads must share the same event-loop portal so that asyncio.Lock
+    # serialises them. Inject a shared portal directly (bypasses lifespan so
+    # MediaPipe is never loaded) and recreate the lock inside that loop.
+    import anyio.from_thread as _af
+
+    with _af.start_blocking_portal(backend="asyncio") as portal:
+        # Replace the asyncio.Lock with one created in *this* event loop.
+        client.app.state.lock = portal.call(asyncio.Lock)
+        # Point the client at this shared portal (no lifespan triggered).
+        client.portal = portal
+
+        def fire():
+            files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+            data = {"exercise": "squat"}
+            return client.post("/analyze", files=files, data=data)
+
+        t1 = threading.Thread(target=fire)
+        t2 = threading.Thread(target=fire)
+        t1.start(); t2.start()
+        t1.join(); t2.join()
+
+    assert max_in_flight == 1, (
+        f"expected serialized execution but max_in_flight={max_in_flight}"
+    )
