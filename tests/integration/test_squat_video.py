@@ -22,7 +22,7 @@ def fixture_ids():
 
 @pytest.mark.integration
 @pytest.mark.parametrize("fixture_id", fixture_ids())
-def test_fixture_video(fixture_id: str):
+def test_fixture_video(fixture_id: str, record_fixture_result):
     manifest = load_manifest()
     spec = manifest[fixture_id]
     video_path = FIXTURES_DIR / spec["path"]
@@ -31,6 +31,7 @@ def test_fixture_video(fixture_id: str):
 
     analyzer = VideoAnalyzer()
     report = analyzer.analyze(str(video_path), exercise=spec["exercise"])
+    record_fixture_result(fixture_id, spec, report)
 
     rmin, rmax = spec["expected_reps"]["min"], spec["expected_reps"]["max"]
     assert rmin <= report.total_reps <= rmax, (

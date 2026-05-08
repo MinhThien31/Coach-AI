@@ -11,3 +11,4 @@ build/
 .DS_Store
 tests/fixtures/videos/*.mp4
 !tests/fixtures/videos/.gitkeep
+tests/integration/_artifacts/
