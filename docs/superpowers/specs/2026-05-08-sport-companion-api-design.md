@@ -111,7 +111,7 @@ Multipart form-data fields:
 | Field | Type | Required | Default | Notes |
 |---|---|---|---|---|
 | `video` | file (MP4) | yes | — | Streamed to temp file. Rejected if upload exceeds `API_MAX_UPLOAD_MB`. |
-| `exercise` | str | yes | — | One of `squat`, `deadlift`, `bench`, `pushup`, `bicep_curl`. Anything else → 400. |
+| `exercise` | str | yes | — | One of `squat`, `deadlift`, `bench_press`, `push_up`, `bicep_curl` (matches `EXERCISE_REGISTRY` keys). Anything else → 400. |
 | `skeleton_output` | str | no | `keyframes` | One of `full`, `sampled`, `keyframes`, `none`. Invalid → 422. |
 | `enrich` | bool | no | `false` | If `true` and the server has `NVIDIA_API_KEY`, the report runs through `NvidiaNimEnricher`. If `true` but no key, the request still succeeds with a `ENRICHMENT_FAILED` warning in the report (does not 500). |
 
@@ -128,10 +128,10 @@ Returns 200 once the lifespan startup has loaded the analyzer (the model file `p
 ### `GET /exercises`
 
 ```json
-{ "exercises": ["squat", "deadlift", "bench", "pushup", "bicep_curl"] }
+{ "exercises": ["squat", "deadlift", "bench_press", "push_up", "bicep_curl"] }
 ```
 
-Drives a frontend dropdown. The list is derived from the registered `ExerciseRule` classes — adding an exercise to the package automatically extends this list.
+Drives a frontend dropdown. The list is the keys of `EXERCISE_REGISTRY` (populated when `sport_companion_ai.exercises` is imported) — adding an exercise to the package automatically extends this list. Order is registration order, not stable; clients should not rely on it.
 
 ### `GET /docs`, `GET /openapi.json`, `GET /redoc`
 
@@ -169,15 +169,20 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app):
     app.state.settings = Settings()                      # env → typed config
-    app.state.analyzer = VideoAnalyzer()                 # loads MediaPipe once
-    app.state.enricher = (
-        NvidiaNimEnricher(api_key=key) if (key := os.getenv("NVIDIA_API_KEY")) else None
+    extractor = MediaPipeExtractor()                     # heavy; load once
+    app.state.analyzer_default = VideoAnalyzer(
+        pose_extractor=extractor, enricher=TemplateEnricher(),
+    )
+    key = os.getenv("NVIDIA_API_KEY")
+    app.state.analyzer_enriched = (
+        VideoAnalyzer(pose_extractor=extractor, enricher=NvidiaNimEnricher(api_key=key))
+        if key else None
     )
     app.state.lock = asyncio.Lock()
     yield
 ```
 
-The analyzer is constructed once, at startup. No per-request model loading.
+Two analyzers share a single `MediaPipeExtractor` (the heavy resource). One uses the no-op `TemplateEnricher`, the other (only constructed if `NVIDIA_API_KEY` is set) uses `NvidiaNimEnricher`. The handler picks based on the `enrich` form field. If `enrich=true` but `analyzer_enriched is None`, the default analyzer runs and the response gets a manually-appended `ENRICHMENT_FAILED` warning so the server-no-key path matches the in-process no-key path semantically.
 
 ### Upload handling
 
@@ -208,10 +213,8 @@ api = [
   "uvicorn[standard]>=0.27",
   "python-multipart>=0.0.9",
 ]
-dev = [
-  # ...existing dev deps...
-  "httpx>=0.27",        # for FastAPI TestClient
-]
+# dev extras unchanged — httpx is already a main dependency, so FastAPI's
+# TestClient (which uses httpx) needs no addition.
 ```
 
 Phase 1 users (`pip install -e .`) get no API dependencies. Phase 2 users run `pip install -e ".[api]"`.
@@ -221,25 +224,33 @@ Phase 1 users (`pip install -e .`) get no API dependencies. Phase 2 users run `p
 One image, two entrypoints. The default is the API; CLI demo is still runnable by overriding `CMD`.
 
 ```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
+FROM python:3.13-slim
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
-COPY pyproject.toml README.md ./
-COPY sport_companion_ai ./sport_companion_ai
-COPY api ./api
-COPY examples ./examples
+        libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY pyproject.toml ./
+COPY sport_companion_ai/ ./sport_companion_ai/
+COPY api/ ./api/
+COPY examples/ ./examples/
+
 RUN pip install --no-cache-dir -e ".[api]"
+
 EXPOSE 8000
+# No ENTRYPOINT (Phase 1 used one for the CLI). API is the default.
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 ```
 
-CLI usage continues to work:
+The Phase 1 ENTRYPOINT (`python examples/analyze_squat.py`) is removed; CLI usage now requires an explicit command override:
 
 ```bash
 docker run --rm -v "$PWD":/data sport-companion-ai \
   python examples/analyze_squat.py /data/squat.mp4 --exercise squat
 ```
+
+This is a breaking change for any user that depended on the Phase 1 image's bare-flag invocation. Document it in the README API section.
 
 ### Middleware
 
