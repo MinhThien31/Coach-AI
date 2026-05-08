@@ -67,6 +67,58 @@ docker build -t sport-companion-ai .
 docker run --rm -v "$PWD":/data sport-companion-ai /data/squat.mp4 --exercise squat
 ```
 
+## Quick start (HTTP API — Phase 2)
+
+```bash
+pip install -e ".[api]"
+uvicorn api.main:app --reload
+# OpenAPI: http://localhost:8000/docs
+```
+
+Submit a video:
+
+```bash
+curl -F "video=@squat.mp4" -F "exercise=squat" \
+     http://localhost:8000/analyze | jq
+```
+
+With LLM enrichment (server reads `NVIDIA_API_KEY` from env):
+
+```bash
+curl -F "video=@squat.mp4" -F "exercise=squat" -F "enrich=true" \
+     http://localhost:8000/analyze | jq .session_summary
+```
+
+Endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/analyze` | Submit video, get `AnalysisReport` JSON |
+| `GET`  | `/exercises` | List supported exercise names |
+| `GET`  | `/health` | Liveness check |
+| `GET`  | `/docs`, `/openapi.json` | FastAPI auto-docs |
+
+Configuration (env vars):
+
+| Var | Default | Purpose |
+|---|---|---|
+| `API_MAX_UPLOAD_MB` | `100` | Reject uploads bigger than this (413) |
+| `API_MAX_VIDEO_SECONDS` | `60` | Reject videos longer than this (413) |
+| `API_CORS_ORIGINS` | `*` | Comma-separated origins |
+| `NVIDIA_API_KEY` | unset | If set, `enrich=true` runs through NIM |
+
+### Docker
+
+The default image now runs the API. The Phase 1 ENTRYPOINT is removed —
+running the CLI demo requires an explicit command:
+
+```bash
+docker build -t sport-companion-ai .
+docker run --rm -p 8000:8000 sport-companion-ai           # API
+docker run --rm -v "$PWD":/data sport-companion-ai \
+  python examples/analyze_squat.py /data/squat.mp4 --exercise squat   # CLI
+```
+
 ## Output schema
 
 Top-level fields:

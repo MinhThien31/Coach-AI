@@ -10,9 +10,13 @@ WORKDIR /app
 
 COPY pyproject.toml ./
 COPY sport_companion_ai/ ./sport_companion_ai/
+COPY api/ ./api/
 COPY examples/ ./examples/
 
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e ".[api]"
 
-ENTRYPOINT ["python", "examples/analyze_squat.py"]
-CMD ["--help"]
+EXPOSE 8000
+# Default: HTTP API. CLI demo still callable with an explicit override:
+#   docker run --rm -v "$PWD":/data <image> \
+#     python examples/analyze_squat.py /data/squat.mp4 --exercise squat
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
