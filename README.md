@@ -45,7 +45,19 @@ print(report.session_summary)
 ## Quick start (CLI)
 
 ```bash
+# Optional: set up the .env (gitignored) for NVIDIA NIM enrichment
+cp .env.example .env
+# Then edit .env and put your nvapi-... key
+
 python examples/analyze_squat.py squat.mp4 --exercise squat --skeleton keyframes
+python examples/analyze_squat.py squat.mp4 --enrich-with-nim   # uses .env automatically
+```
+
+The default LLM is `qwen/qwen3-next-80b-a3b-instruct` — chosen after benchmarking on
+Vietnamese coaching prompts (~2-3s latency, top-of-VMLU family). To switch:
+
+```python
+NvidiaNimEnricher(api_key=..., model="meta/llama-3.3-70b-instruct")
 ```
 
 ## Quick start (Docker)

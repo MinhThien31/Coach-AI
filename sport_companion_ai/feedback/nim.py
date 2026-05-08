@@ -36,8 +36,8 @@ class NvidiaNimEnricher:
     def __init__(
         self,
         api_key: str,
-        model: str = "meta/llama-3.3-70b-instruct",
-        timeout_s: float = 10.0,
+        model: str = "qwen/qwen3-next-80b-a3b-instruct",
+        timeout_s: float = 30.0,
         max_retries: int = 1,
         backoff_s: float = 1.0,
     ):
