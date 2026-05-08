@@ -1,0 +1,21 @@
+# Each entry describes an expected outcome for a fixture video.
+# Tests assert ranges, not exact numbers, to allow for pose-detection jitter.
+squat_good_5reps:
+  path: videos/squat_good_5reps.mp4
+  exercise: squat
+  expected_reps: { min: 4, max: 6 }
+  expected_passed_reps: { min: 4, max: 6 }
+  expected_avg_score: { min: 75, max: 100 }
+  required_issues_absent: [SQUAT_DEPTH_INSUFFICIENT, SQUAT_KNEE_VALGUS]
+
+squat_shallow_3reps:
+  path: videos/squat_shallow_3reps.mp4
+  exercise: squat
+  expected_reps: { min: 2, max: 4 }
+  required_issues_present: [SQUAT_DEPTH_INSUFFICIENT]
+
+pushup_good_3reps:
+  path: videos/pushup_good_3reps.mp4
+  exercise: push_up
+  expected_reps: { min: 2, max: 4 }
+  expected_passed_reps: { min: 2, max: 4 }
