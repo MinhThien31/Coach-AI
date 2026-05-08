@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+tests/fixtures/videos/*.mp4
+!tests/fixtures/videos/.gitkeep
