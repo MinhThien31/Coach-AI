@@ -19,12 +19,8 @@ from sport_companion_ai.report import Issue, Rep, RepEvaluation
 class SquatRule(ExerciseRule):
     name = "squat"
     primary_angle = "knee"
-    # rep_threshold_low / high: the rep detector looks for angle valleys (minima).
-    # With the helper geometry a standing angle ≈ 170° and a deep squat ≈ 88°.
-    # threshold_high is set to 130 so that even offset-shifted series (max ≈ 135°)
-    # are still correctly bracketed.
     rep_threshold_low = 100.0
-    rep_threshold_high = 130.0
+    rep_threshold_high = 160.0
 
     # ── Form-rule thresholds (MUST match spec exactly) ──────────────────────
     DEPTH_TARGET = 95.0

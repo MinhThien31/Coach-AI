@@ -89,8 +89,12 @@ def make_squat_rep_frames(
     n = int(rep_seconds * fps)
     frames = []
     for i in range(n):
-        progress = abs(2 * (i / n) - 1)  # 1 → 0 → 1  (V shape)
+        progress = abs(2 * (i / n) - 1)  # 1 (top) → 0 (bottom) → 1 (top)
         knee_at_t = 170 - (170 - min_knee_deg) * (1 - progress)
-        skel = squat_skeleton(knee_at_t, back_deg=back_deg, knee_offset=knee_offset)
+        # Valgus is dynamic — knees collapse only as depth increases. Scale
+        # knee_offset by (1 - progress) so it's zero at the top of the rep and
+        # full at the bottom, preserving rep_threshold_high=160.
+        offset_at_t = knee_offset * (1 - progress)
+        skel = squat_skeleton(knee_at_t, back_deg=back_deg, knee_offset=offset_at_t)
         frames.append(Frame(index=i, timestamp_ms=int(i / fps * 1000), skeleton=skel))
     return frames
