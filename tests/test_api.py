@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import io
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -113,3 +113,33 @@ def test_analyze_invalid_skeleton_output_returns_422(client):
     data = {"exercise": "squat", "skeleton_output": "bogus"}
     r = client.post("/analyze", files=files, data=data)
     assert r.status_code == 422
+
+
+def test_analyze_too_large_returns_413(client):
+    # Settings default is 100 MB — set to 1 MB on this client only.
+    client.app.state.settings = Settings(
+        max_upload_mb=1,
+        max_video_seconds=60,
+        cors_origins=("*",),
+        nvidia_api_key=None,
+    )
+    big = io.BytesIO(b"x" * (2 * (1 << 20)))  # 2 MiB > 1 MiB limit
+    files = {"video": ("big.mp4", big, "video/mp4")}
+    data = {"exercise": "squat"}
+    r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 413
+    assert r.json()["error"] == "video_too_large"
+
+
+def test_analyze_too_long_returns_413(client):
+    # cv2 returns a 120s duration -> over default 60s limit.
+    fake_report = _fake_report()
+    client.app.state.analyzer_default.analyze.return_value = fake_report
+    with patch("api.routes._video_duration_seconds", return_value=120.0):
+        files = {"video": ("long.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+        data = {"exercise": "squat"}
+        r = client.post("/analyze", files=files, data=data)
+    assert r.status_code == 413
+    assert r.json()["error"] == "video_too_long"
+    # analyzer must NOT have been called when duration check fails
+    client.app.state.analyzer_default.analyze.assert_not_called()
