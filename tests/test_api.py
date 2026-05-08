@@ -29,3 +29,12 @@ def test_health_returns_ok(client):
     r = client.get("/health")
     assert r.status_code == 200
     assert r.json() == {"status": "ok"}
+
+
+def test_exercises_lists_all_registered_rules(client):
+    r = client.get("/exercises")
+    assert r.status_code == 200
+    data = r.json()
+    assert set(data["exercises"]) == {
+        "squat", "deadlift", "bench_press", "push_up", "bicep_curl",
+    }

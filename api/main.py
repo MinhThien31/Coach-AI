@@ -15,6 +15,7 @@ from sport_companion_ai.feedback.template import TemplateEnricher
 from sport_companion_ai.pose.extractor import MediaPipeExtractor
 
 from api.errors import register_exception_handlers
+from api.routes import router as api_router
 from api.settings import Settings
 
 log = logging.getLogger("api")
@@ -56,6 +57,7 @@ app.add_middleware(
 )
 
 register_exception_handlers(app)
+app.include_router(api_router)
 
 
 @app.middleware("http")
