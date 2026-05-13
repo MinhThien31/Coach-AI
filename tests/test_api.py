@@ -48,7 +48,13 @@ def test_exercises_lists_all_registered_rules(client):
     assert names == {
         "squat", "deadlift", "bench_press", "push_up", "bicep_curl",
         "overhead_press", "pull_up", "lunge", "plank", "lateral_raise",
+        "badminton",
     }
+    badminton = next(exercise for exercise in exercises if exercise["name"] == "badminton")
+    assert badminton["display_name_vi"] == "Cầu lông"
+    assert badminton["category"] == "racket_sport"
+    assert "BADMINTON_CONTACT_TOO_LOW" in badminton["issue_codes"]
+
     overhead = next(exercise for exercise in exercises if exercise["name"] == "overhead_press")
     assert overhead["display_name_vi"] == "Overhead press"
     assert overhead["movement_type"] == "repetition"
@@ -104,6 +110,7 @@ def test_analyze_happy_path_returns_report_json(client):
     "lunge",
     "plank",
     "lateral_raise",
+    "badminton",
 ])
 def test_analyze_accepts_registered_exercise_names(client, exercise):
     client.app.state.analyzer_default.analyze.return_value = _fake_report(exercise=exercise)

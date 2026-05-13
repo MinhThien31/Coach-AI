@@ -3,6 +3,7 @@ import math
 import pytest
 
 from sport_companion_ai.exercises.base import ExerciseRule
+from sport_companion_ai.exercises.badminton import BadmintonRule
 from sport_companion_ai.exercises.lateral_raise import LateralRaiseRule
 from sport_companion_ai.exercises.lunge import LungeRule
 from sport_companion_ai.exercises.overhead_press import OverheadPressRule
@@ -173,11 +174,91 @@ def make_raise_frames(max_shoulder: float = 90.0, shrug: bool = False) -> list[F
     return frames
 
 
+def _badminton_skeleton(
+    shoulder_deg: float = 110.0,
+    elbow_deg: float = 165.0,
+    contact_high: float = 0.14,
+    knee_offset: float = 0.0,
+    lean_deg: float = 35.0,
+) -> Skeleton:
+    torso_len = 0.25
+    lean = math.radians(lean_deg)
+    hip_mid = (0.5, 0.70)
+    shoulder_mid = (
+        hip_mid[0] + torso_len * math.sin(lean),
+        hip_mid[1] - torso_len * math.cos(lean),
+    )
+
+    right_shoulder = (shoulder_mid[0] + 0.06, shoulder_mid[1])
+    left_shoulder = (shoulder_mid[0] - 0.06, shoulder_mid[1])
+    upper = 0.16
+    forearm = 0.12
+    theta = math.radians(shoulder_deg)
+    right_elbow = (
+        right_shoulder[0] + upper * math.sin(theta),
+        right_shoulder[1] + upper * math.cos(theta),
+    )
+    phi = math.radians(elbow_deg)
+    right_wrist = (
+        right_elbow[0] + forearm * math.sin(phi),
+        shoulder_mid[1] - contact_high,
+    )
+
+    left_hip = (0.42, 0.70)
+    right_hip = (0.58, 0.70)
+    left_knee = (0.36 + knee_offset, 0.78)
+    left_ankle = (0.30, 0.90)
+
+    return Skeleton(keypoints={
+        "left_shoulder": kp(*left_shoulder),
+        "right_shoulder": kp(*right_shoulder),
+        "right_elbow": kp(*right_elbow),
+        "right_wrist": kp(*right_wrist),
+        "left_elbow": kp(left_shoulder[0] - 0.02, left_shoulder[1] + 0.12),
+        "left_wrist": kp(left_shoulder[0] - 0.04, left_shoulder[1] + 0.22),
+        "left_hip": kp(*left_hip),
+        "right_hip": kp(*right_hip),
+        "left_knee": kp(*left_knee),
+        "left_ankle": kp(*left_ankle),
+        "right_knee": kp(0.62, 0.82),
+        "right_ankle": kp(0.67, 0.92),
+    })
+
+
+def make_badminton_frames(
+    max_shoulder: float = 110.0,
+    max_elbow: float = 145.0,
+    contact_high: float = 0.14,
+    knee_offset: float = 0.0,
+    lean_deg: float = 35.0,
+) -> list[Frame]:
+    frames = []
+    n = 60
+    for i in range(n):
+        progress = abs(2 * (i / n) - 1)
+        shoulder = max_shoulder - (max_shoulder - 35) * progress
+        elbow = max_elbow - (max_elbow - 90) * progress
+        high = contact_high * (1 - progress)
+        frames.append(Frame(
+            index=i,
+            timestamp_ms=i * 33,
+            skeleton=_badminton_skeleton(
+                shoulder_deg=shoulder,
+                elbow_deg=elbow,
+                contact_high=high,
+                knee_offset=knee_offset * (1 - progress),
+                lean_deg=lean_deg,
+            ),
+        ))
+    return frames
+
+
 def _rep_for(frames: list[Frame]) -> Rep:
     return Rep(rep_index=0, start_idx=0, peak_idx=len(frames) // 2, end_idx=len(frames) - 1)
 
 
 @pytest.mark.parametrize(("name", "rule"), [
+    ("badminton", BadmintonRule),
     ("overhead_press", OverheadPressRule),
     ("pull_up", PullUpRule),
     ("lunge", LungeRule),
@@ -268,7 +349,25 @@ def test_lateral_raise_clean_and_issues():
         assert code in {issue.code for issue in eval_.issues}
 
 
+def test_badminton_clean_and_issues():
+    rule = BadmintonRule()
+    clean = make_badminton_frames()
+    rep = rule.detect_reps(clean)[0]
+    assert rule.evaluate_rep(rep, clean).passed is True
+
+    cases = [
+        (make_badminton_frames(max_shoulder=80, contact_high=0.02), "BADMINTON_CONTACT_TOO_LOW"),
+        (make_badminton_frames(max_elbow=205), "BADMINTON_ELBOW_COLLAPSE"),
+        (make_badminton_frames(knee_offset=0.08), "BADMINTON_LUNGE_KNEE_VALGUS"),
+        (make_badminton_frames(lean_deg=75), "BADMINTON_TORSO_OVERLEAN"),
+    ]
+    for frames, code in cases:
+        eval_ = rule.evaluate_rep(_rep_for(frames), frames)
+        assert code in {issue.code for issue in eval_.issues}
+
+
 @pytest.mark.parametrize(("rule", "rep"), [
+    (BadmintonRule(), Rep(rep_index=0, start_idx=0, peak_idx=0, end_idx=0)),
     (OverheadPressRule(), Rep(rep_index=0, start_idx=0, peak_idx=0, end_idx=0)),
     (PullUpRule(), Rep(rep_index=0, start_idx=0, peak_idx=0, end_idx=0)),
     (LungeRule(), Rep(rep_index=0, start_idx=0, peak_idx=0, end_idx=0)),
