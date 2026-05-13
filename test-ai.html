@@ -891,7 +891,7 @@
   <body>
     <main class="app">
       <nav class="crumbs" aria-label="breadcrumb">
-        <span class="crumb">Thể hình</span>
+        <span id="crumbCategory" class="crumb">Thể hình</span>
         <span class="chev">›</span>
         <span id="crumbExercise" class="crumb current">Squat</span>
       </nav>
@@ -968,6 +968,7 @@
       const result = document.querySelector("#result");
       const raw = document.querySelector("#raw");
       const apiStatus = document.querySelector("#apiStatus");
+      const crumbCategory = document.querySelector("#crumbCategory");
       const crumbExercise = document.querySelector("#crumbExercise");
       let poseAnimation = null;
 
@@ -982,7 +983,54 @@
         lunge: "Lunge",
         plank: "Plank",
         lateral_raise: "Lateral Raise",
-        badminton: "Cầu lông",
+        badminton_backhand_clear: "Cầu lông - Phông trái tay",
+        badminton_clear: "Cầu lông - Phông cầu",
+        badminton_defensive_block: "Cầu lông - Chặn cầu",
+        badminton_forward_backward_footwork: "Cầu lông - Di chuyển tiến lùi thẳng đứng",
+        badminton_front_corners_footwork: "Cầu lông - Di chuyển 2 góc lưới",
+        badminton_heavy_racket: "Cầu lông - Tập với vợt nặng",
+        badminton_high_serve: "Cầu lông - Giao cầu cao sâu",
+        badminton_interval_run: "Cầu lông - Chạy biến tốc",
+        badminton_juggle: "Cầu lông - Tâng cầu",
+        badminton_jump_rope: "Cầu lông - Nhảy dây",
+        badminton_jump_smash: "Cầu lông - Bước nhảy đánh cầu",
+        badminton_lift_shot: "Cầu lông - Búng cầu / Lob lưới",
+        badminton_low_serve: "Cầu lông - Giao cầu thấp ngắn",
+        badminton_smash: "Cầu lông - Đập cầu",
+        badminton_drop_shot: "Cầu lông - Bỏ nhỏ",
+        badminton_drive: "Cầu lông - Tạt cầu",
+        badminton_lunge: "Cầu lông - Bước lunge đỡ cầu",
+        badminton_mid_corners_footwork: "Cầu lông - Di chuyển 2 góc giữa sân",
+        badminton_multi_point_footwork: "Cầu lông - Di chuyển đa điểm",
+        badminton_multi_shuttle: "Cầu lông - Tập đa cầu",
+        badminton_net_kill: "Cầu lông - Bỏ nhỏ / Chụp lưới",
+        badminton_net_shot: "Cầu lông - Đánh lưới",
+        badminton_push_shot: "Cầu lông - Đẩy cầu / Tạt cầu",
+        badminton_rear_corners_footwork: "Cầu lông - Di chuyển 2 góc cuối sân",
+        badminton_serve: "Cầu lông - Giao cầu",
+        badminton_split_step: "Cầu lông - Split-step",
+        badminton_wall_rally: "Cầu lông - Đánh cầu vào tường",
+        yoga_boat_pose: "Yoga - Tư thế con thuyền",
+        yoga_bridge_pose: "Yoga - Tư thế cây cầu",
+        yoga_chair_pose: "Yoga - Tư thế ghế",
+        yoga_child_pose: "Yoga - Tư thế em bé",
+        yoga_cobra_pose: "Yoga - Rắn hổ mang",
+        yoga_downward_dog: "Yoga - Chó úp mặt",
+        yoga_low_lunge: "Yoga - Low lunge",
+        yoga_tree_pose: "Yoga - Tư thế cây",
+        yoga_triangle_pose: "Yoga - Tư thế tam giác",
+        yoga_warrior_ii: "Yoga - Chiến binh II",
+      };
+      const CATEGORY_LABELS = {
+        lower_body: "Thân dưới",
+        posterior_chain: "Chuỗi sau",
+        upper_body_push: "Đẩy thân trên",
+        upper_body_pull: "Kéo thân trên",
+        upper_body_accessory: "Vai & tay",
+        core: "Core",
+        racket_sport: "Cầu lông",
+        yoga: "Yoga",
+        strength: "Thể hình",
       };
       let exerciseMetadata = {};
 
@@ -992,6 +1040,16 @@
 
       function displayExercise(name) {
         return exerciseMetadata[name]?.display_name_vi || EXERCISE_LABELS[name] || name || "Exercise";
+      }
+
+      function displayCategory(category) {
+        return CATEGORY_LABELS[category] || category || "Thể hình";
+      }
+
+      function updateCrumbs(name) {
+        const meta = exerciseMetadata[name] || {};
+        crumbCategory.textContent = displayCategory(meta.category || "strength");
+        crumbExercise.textContent = displayExercise(name);
       }
 
       function escapeHtml(value) {
@@ -1148,13 +1206,23 @@
             : item
         )).filter((item) => item && item.name);
         exerciseMetadata = Object.fromEntries(items.map((item) => [item.name, item]));
-        exercise.innerHTML = items.map((item) => (
-          `<option value="${escapeHtml(item.name)}">${escapeHtml(item.display_name_vi || item.name)}</option>`
+        const grouped = items.reduce((acc, item) => {
+          const category = item.category || "strength";
+          acc[category] ||= [];
+          acc[category].push(item);
+          return acc;
+        }, {});
+        exercise.innerHTML = Object.entries(grouped).map(([category, categoryItems]) => (
+          `<optgroup label="${escapeHtml(displayCategory(category))}">`
+          + categoryItems.map((item) => (
+            `<option value="${escapeHtml(item.name)}">${escapeHtml(item.display_name_vi || item.name)}</option>`
+          )).join("")
+          + "</optgroup>"
         )).join("");
         if (items.some((item) => item.name === current)) {
           exercise.value = current;
         }
-        crumbExercise.textContent = displayExercise(exercise.value);
+        updateCrumbs(exercise.value);
       }
 
       function renderHero(report) {
@@ -1199,11 +1267,15 @@
       function renderMotionPanel(report) {
         const frames = framesWithSkeleton(report);
         const keypointCount = report.skeleton_schema?.keypoint_names?.length || 0;
+        const frameCount = report.frames?.length || 0;
         if (!frames.length) {
+          const message = frameCount
+            ? "API đã trả frames nhưng pose detector không tìm thấy keypoints đủ rõ để vẽ 2D. Hãy thử video sáng hơn, quay toàn thân và tránh bị cắt người."
+            : "Chưa có skeleton frames để phát 2D. Hệ thống sẽ tự ưu tiên sampled/keyframes; hãy phân tích lại nếu bạn vừa đổi video.";
           return `
             <section class="content-card motion-card">
               <div class="empty">
-                Không có skeleton frames để phát 2D. Chọn skeleton là sampled hoặc full rồi phân tích lại.
+                ${escapeHtml(message)}
               </div>
             </section>
           `;
@@ -1586,7 +1658,7 @@
       function renderReport(report) {
         report = normalizeAiFeedback(report);
         stopPoseAnimation();
-        crumbExercise.textContent = displayExercise(report.exercise);
+        updateCrumbs(report.exercise);
         raw.textContent = JSON.stringify(report, null, 2);
         result.innerHTML = `
           ${renderHero(report)}
@@ -1618,6 +1690,30 @@
       function uploadWithProgress(url, data) {
         return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
+          let analysisTimer = null;
+          let analysisStartedAt = null;
+          const clearAnalysisTimer = () => {
+            if (analysisTimer) {
+              clearInterval(analysisTimer);
+              analysisTimer = null;
+            }
+          };
+          const startAnalysisTimer = () => {
+            if (analysisTimer) {
+              return;
+            }
+            analysisStartedAt = Date.now();
+            const baseText = enrich.checked
+              ? "Upload xong, AI/NVIDIA đang phân tích"
+              : "Upload xong, đang phân tích pose";
+            const tick = () => {
+              const elapsed = Math.max(1, Math.round((Date.now() - analysisStartedAt) / 1000));
+              progressBar.style.width = `${Math.min(96, 82 + Math.floor(elapsed / 6))}%`;
+              progressText.textContent = `${baseText}... ${elapsed}s`;
+            };
+            tick();
+            analysisTimer = setInterval(tick, 1000);
+          };
           xhr.open("POST", url);
           xhr.responseType = "text";
           xhr.upload.onprogress = (event) => {
@@ -1627,12 +1723,16 @@
               return;
             }
             const percent = Math.max(6, Math.round((event.loaded / event.total) * 100));
-            progressBar.style.width = `${percent}%`;
-            progressText.textContent = percent >= 100
-              ? "Upload xong, AI đang phân tích..."
-              : `Đang upload ${percent}%...`;
+            if (percent >= 100) {
+              startAnalysisTimer();
+            } else {
+              progressBar.style.width = `${percent}%`;
+              progressText.textContent = `Đang upload ${percent}%...`;
+            }
           };
+          xhr.upload.onload = startAnalysisTimer;
           xhr.onload = () => {
+            clearAnalysisTimer();
             const contentType = xhr.getResponseHeader("content-type") || "";
             let body = xhr.responseText;
             if (contentType.includes("application/json")) {
@@ -1649,13 +1749,16 @@
               reject(new Error(detail || `HTTP ${xhr.status}`));
             }
           };
-          xhr.onerror = () => reject(new Error("Không kết nối được API local."));
+          xhr.onerror = () => {
+            clearAnalysisTimer();
+            reject(new Error("Không kết nối được API local."));
+          };
           xhr.send(data);
         });
       }
 
       exercise.addEventListener("change", () => {
-        crumbExercise.textContent = displayExercise(exercise.value);
+        updateCrumbs(exercise.value);
       });
 
       form.addEventListener("submit", async (event) => {

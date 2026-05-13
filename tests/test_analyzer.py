@@ -8,7 +8,13 @@ from sport_companion_ai.errors import UnsupportedExerciseError
 from sport_companion_ai.pose.schema import Frame, Keypoint, Skeleton
 from sport_companion_ai.report import VideoMeta
 from tests.exercises._helpers import make_squat_rep_frames
-from tests.exercises.test_new_rules import make_badminton_frames, make_plank_frames, make_press_frames
+from tests.exercises.test_new_rules import (
+    make_badminton_frames,
+    make_badminton_split_step_frames,
+    make_plank_frames,
+    make_press_frames,
+    make_yoga_tree_frames,
+)
 
 
 def _stub_extractor(rep_frames):
@@ -97,15 +103,43 @@ def test_full_pipeline_plank_hold(mocker):
     assert report.reps[0].metrics["hold_duration_ms"] >= 10000
 
 
-def test_full_pipeline_badminton(mocker):
+def test_full_pipeline_badminton_smash(mocker):
     rep_frames = make_badminton_frames()
     n = len(rep_frames)
     mocker.patch("sport_companion_ai.analyzer.read_video", return_value=_stub_video_reader(n))
 
     analyzer = VideoAnalyzer(pose_extractor=_stub_extractor(rep_frames))
-    report = analyzer.analyze("dummy.mp4", exercise="badminton")
+    report = analyzer.analyze("dummy.mp4", exercise="badminton_smash")
 
-    assert report.exercise == "badminton"
+    assert report.exercise == "badminton_smash"
     assert report.total_reps == 1
     assert report.passed_reps == 1
     assert "max_racket_shoulder_angle" in report.reps[0].metrics
+
+
+def test_full_pipeline_badminton_split_step(mocker):
+    rep_frames = make_badminton_split_step_frames()
+    n = len(rep_frames)
+    mocker.patch("sport_companion_ai.analyzer.read_video", return_value=_stub_video_reader(n))
+
+    analyzer = VideoAnalyzer(pose_extractor=_stub_extractor(rep_frames))
+    report = analyzer.analyze("dummy.mp4", exercise="badminton_split_step")
+
+    assert report.exercise == "badminton_split_step"
+    assert report.total_reps == 1
+    assert report.passed_reps == 1
+    assert "max_knee_flexion" in report.reps[0].metrics
+
+
+def test_full_pipeline_yoga_tree_pose(mocker):
+    rep_frames = make_yoga_tree_frames()
+    n = len(rep_frames)
+    mocker.patch("sport_companion_ai.analyzer.read_video", return_value=_stub_video_reader(n))
+
+    analyzer = VideoAnalyzer(pose_extractor=_stub_extractor(rep_frames))
+    report = analyzer.analyze("dummy.mp4", exercise="yoga_tree_pose")
+
+    assert report.exercise == "yoga_tree_pose"
+    assert report.total_reps == 1
+    assert report.passed_reps == 1
+    assert "foot_height_margin_min" in report.reps[0].metrics

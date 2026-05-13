@@ -26,6 +26,13 @@ REQUIRED = (
     "right_knee", "right_ankle",
 )
 
+FOOTWORK_REQUIRED = (
+    "left_shoulder", "right_shoulder",
+    "left_hip", "right_hip",
+    "left_knee", "left_ankle",
+    "right_knee", "right_ankle",
+)
+
 
 def _front_knee_valgus(skel: Skeleton) -> float:
     """Approximate lead-leg knee collapse for a badminton lunge."""
@@ -46,10 +53,19 @@ def _contact_height_margin(skel: Skeleton) -> float:
     return shoulder_y - wrist_y
 
 
-@register_rule
-class BadmintonRule(ExerciseRule):
-    name = "badminton"
-    display_name_vi = "Cầu lông"
+def _stance_width_ratio(skel: Skeleton) -> float:
+    shoulder_width = abs(skel.keypoints["right_shoulder"].x - skel.keypoints["left_shoulder"].x)
+    if shoulder_width == 0:
+        return 0.0
+    ankle_width = abs(skel.keypoints["right_ankle"].x - skel.keypoints["left_ankle"].x)
+    return ankle_width / shoulder_width
+
+
+def _average_knee_angle(skel: Skeleton) -> float:
+    return (knee_angle(skel, side="left") + knee_angle(skel, side="right")) / 2
+
+
+class BaseBadmintonStrokeRule(ExerciseRule):
     category = "racket_sport"
     equipment = ["racket", "shuttlecock"]
     primary_joints = ["shoulder", "elbow", "wrist", "hip", "knee"]
@@ -159,3 +175,356 @@ class BadmintonRule(ExerciseRule):
             keyframes={"start": rep.start_idx, "peak": rep.peak_idx, "end": rep.end_idx},
         )
 
+
+@register_rule
+class BadmintonClearRule(BaseBadmintonStrokeRule):
+    name = "badminton_clear"
+    display_name_vi = "Cầu lông - Phông cầu"
+
+
+@register_rule
+class BadmintonSmashRule(BaseBadmintonStrokeRule):
+    name = "badminton_smash"
+    display_name_vi = "Cầu lông - Đập cầu"
+    CONTACT_HEIGHT_MIN = 0.10
+    SHOULDER_CONTACT_MIN = 105.0
+    ELBOW_EXTENSION_MIN = 145.0
+    TORSO_LEAN_MAX = 70.0
+
+
+@register_rule
+class BadmintonDropShotRule(BaseBadmintonStrokeRule):
+    name = "badminton_drop_shot"
+    display_name_vi = "Cầu lông - Bỏ nhỏ"
+    CONTACT_HEIGHT_MIN = 0.06
+    SHOULDER_CONTACT_MIN = 90.0
+    ELBOW_EXTENSION_MIN = 135.0
+
+
+@register_rule
+class BadmintonDriveRule(BaseBadmintonStrokeRule):
+    name = "badminton_drive"
+    display_name_vi = "Cầu lông - Tạt cầu"
+    rep_threshold_low = 60.0
+    CONTACT_HEIGHT_MIN = -0.03
+    SHOULDER_CONTACT_MIN = 55.0
+    ELBOW_EXTENSION_MIN = 125.0
+    TORSO_LEAN_MAX = 55.0
+
+
+@register_rule
+class BadmintonLungeRule(BaseBadmintonStrokeRule):
+    name = "badminton_lunge"
+    display_name_vi = "Cầu lông - Bước lunge đỡ cầu"
+    CONTACT_HEIGHT_MIN = -0.02
+    SHOULDER_CONTACT_MIN = 60.0
+    ELBOW_EXTENSION_MIN = 125.0
+    LUNGE_VALGUS_MAX = 0.16
+
+
+@register_rule
+class BadmintonServeRule(BaseBadmintonStrokeRule):
+    name = "badminton_serve"
+    display_name_vi = "Cầu lông - Giao cầu"
+    rep_threshold_low = 45.0
+    rep_threshold_high = 85.0
+    CONTACT_HEIGHT_MIN = -0.10
+    SHOULDER_CONTACT_MIN = 65.0
+    ELBOW_EXTENSION_MIN = 120.0
+    TORSO_LEAN_MAX = 50.0
+
+
+@register_rule
+class BadmintonLowServeRule(BaseBadmintonStrokeRule):
+    name = "badminton_low_serve"
+    display_name_vi = "Cầu lông - Giao cầu thấp ngắn"
+    rep_threshold_low = 55.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.12
+    SHOULDER_CONTACT_MIN = 52.0
+    ELBOW_EXTENSION_MIN = 112.0
+    TORSO_LEAN_MAX = 45.0
+
+
+@register_rule
+class BadmintonHighServeRule(BaseBadmintonStrokeRule):
+    name = "badminton_high_serve"
+    display_name_vi = "Cầu lông - Giao cầu cao sâu"
+    rep_threshold_low = 42.0
+    rep_threshold_high = 90.0
+    CONTACT_HEIGHT_MIN = -0.04
+    SHOULDER_CONTACT_MIN = 78.0
+    ELBOW_EXTENSION_MIN = 125.0
+    TORSO_LEAN_MAX = 55.0
+
+
+@register_rule
+class BadmintonBackhandClearRule(BaseBadmintonStrokeRule):
+    name = "badminton_backhand_clear"
+    display_name_vi = "Cầu lông - Phông trái tay"
+    rep_threshold_low = 40.0
+    CONTACT_HEIGHT_MIN = 0.03
+    SHOULDER_CONTACT_MIN = 82.0
+    ELBOW_EXTENSION_MIN = 130.0
+    TORSO_LEAN_MAX = 60.0
+
+
+@register_rule
+class BadmintonNetShotRule(BaseBadmintonStrokeRule):
+    name = "badminton_net_shot"
+    display_name_vi = "Cầu lông - Đánh lưới"
+    rep_threshold_low = 55.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.04
+    SHOULDER_CONTACT_MIN = 58.0
+    ELBOW_EXTENSION_MIN = 118.0
+    TORSO_LEAN_MAX = 58.0
+
+
+@register_rule
+class BadmintonDefensiveBlockRule(BaseBadmintonStrokeRule):
+    name = "badminton_defensive_block"
+    display_name_vi = "Cầu lông - Chặn cầu"
+    rep_threshold_low = 50.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.06
+    SHOULDER_CONTACT_MIN = 62.0
+    ELBOW_EXTENSION_MIN = 115.0
+    TORSO_LEAN_MAX = 55.0
+
+
+@register_rule
+class BadmintonPushShotRule(BaseBadmintonStrokeRule):
+    name = "badminton_push_shot"
+    display_name_vi = "Cầu lông - Đẩy cầu / Tạt cầu"
+    rep_threshold_low = 55.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.04
+    SHOULDER_CONTACT_MIN = 58.0
+    ELBOW_EXTENSION_MIN = 120.0
+    TORSO_LEAN_MAX = 55.0
+
+
+@register_rule
+class BadmintonLiftShotRule(BaseBadmintonStrokeRule):
+    name = "badminton_lift_shot"
+    display_name_vi = "Cầu lông - Búng cầu / Lob lưới"
+    rep_threshold_low = 45.0
+    CONTACT_HEIGHT_MIN = 0.02
+    SHOULDER_CONTACT_MIN = 82.0
+    ELBOW_EXTENSION_MIN = 128.0
+    TORSO_LEAN_MAX = 62.0
+
+
+@register_rule
+class BadmintonNetKillRule(BaseBadmintonStrokeRule):
+    name = "badminton_net_kill"
+    display_name_vi = "Cầu lông - Bỏ nhỏ / Chụp lưới"
+    rep_threshold_low = 55.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.03
+    SHOULDER_CONTACT_MIN = 60.0
+    ELBOW_EXTENSION_MIN = 118.0
+    TORSO_LEAN_MAX = 55.0
+
+
+@register_rule
+class BadmintonJuggleRule(BaseBadmintonStrokeRule):
+    name = "badminton_juggle"
+    display_name_vi = "Cầu lông - Tâng cầu"
+    rep_threshold_low = 58.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.08
+    SHOULDER_CONTACT_MIN = 52.0
+    ELBOW_EXTENSION_MIN = 110.0
+    TORSO_LEAN_MAX = 50.0
+
+
+@register_rule
+class BadmintonJumpSmashRule(BaseBadmintonStrokeRule):
+    name = "badminton_jump_smash"
+    display_name_vi = "Cầu lông - Bước nhảy đánh cầu"
+    CONTACT_HEIGHT_MIN = 0.12
+    SHOULDER_CONTACT_MIN = 108.0
+    ELBOW_EXTENSION_MIN = 145.0
+    TORSO_LEAN_MAX = 75.0
+
+
+@register_rule
+class BadmintonMultiShuttleRule(BaseBadmintonStrokeRule):
+    name = "badminton_multi_shuttle"
+    display_name_vi = "Cầu lông - Tập đa cầu"
+    rep_threshold_low = 50.0
+    rep_threshold_high = 90.0
+    CONTACT_HEIGHT_MIN = -0.02
+    SHOULDER_CONTACT_MIN = 65.0
+    ELBOW_EXTENSION_MIN = 122.0
+    TORSO_LEAN_MAX = 65.0
+
+
+@register_rule
+class BadmintonWallRallyRule(BaseBadmintonStrokeRule):
+    name = "badminton_wall_rally"
+    display_name_vi = "Cầu lông - Đánh cầu vào tường"
+    rep_threshold_low = 55.0
+    rep_threshold_high = 88.0
+    CONTACT_HEIGHT_MIN = -0.06
+    SHOULDER_CONTACT_MIN = 55.0
+    ELBOW_EXTENSION_MIN = 115.0
+    TORSO_LEAN_MAX = 50.0
+
+
+@register_rule
+class BadmintonHeavyRacketRule(BaseBadmintonStrokeRule):
+    name = "badminton_heavy_racket"
+    display_name_vi = "Cầu lông - Tập với vợt nặng"
+    rep_threshold_low = 48.0
+    rep_threshold_high = 90.0
+    CONTACT_HEIGHT_MIN = -0.02
+    SHOULDER_CONTACT_MIN = 65.0
+    ELBOW_EXTENSION_MIN = 120.0
+    TORSO_LEAN_MAX = 55.0
+
+
+@register_rule
+class BadmintonSplitStepRule(ExerciseRule):
+    name = "badminton_split_step"
+    display_name_vi = "Cầu lông - Split-step"
+    category = "racket_sport"
+    equipment = ["racket", "shuttlecock"]
+    primary_joints = ["hip", "knee", "ankle"]
+    issue_codes = [
+        "BADMINTON_SPLIT_STEP_NO_KNEE_BEND",
+        "BADMINTON_SPLIT_STEP_STANCE_NARROW",
+        "BADMINTON_TORSO_OVERLEAN",
+    ]
+    primary_angle = "average_knee_angle"
+    rep_threshold_low = 145.0
+    rep_threshold_high = 160.0
+
+    KNEE_BEND_MIN = 30.0
+    STANCE_WIDTH_MIN = 1.15
+    TORSO_LEAN_MAX = 45.0
+
+    def _primary_angle_series(self, frames: list[Frame]) -> list[float]:
+        return safe_series(frames, _average_knee_angle)
+
+    def evaluate_rep(self, rep: Rep, frames: list[Frame]) -> RepEvaluation:
+        rep_frames = frames_with_keypoints(frames, rep, FOOTWORK_REQUIRED)
+        if not rep_frames:
+            return inconclusive(rep)
+
+        knee_flexion = finite([180.0 - _average_knee_angle(f.skeleton) for f in rep_frames])
+        stance_widths = finite([_stance_width_ratio(f.skeleton) for f in rep_frames])
+        torso_angles = finite([back_angle(f.skeleton) for f in rep_frames])
+        if not knee_flexion or not stance_widths:
+            return inconclusive(rep)
+
+        max_knee_flexion = max(knee_flexion)
+        peak_frame = frames[rep.peak_idx]
+        peak_skel = peak_frame.skeleton
+        if peak_skel is None:
+            return inconclusive(rep)
+
+        stance_width = _stance_width_ratio(peak_skel)
+        torso_lean = max(torso_angles) if torso_angles else float("nan")
+
+        issues: list[Issue] = []
+        score = 100
+
+        if max_knee_flexion < self.KNEE_BEND_MIN:
+            issues.append(Issue(
+                code="BADMINTON_SPLIT_STEP_NO_KNEE_BEND",
+                severity="MEDIUM",
+                message_vi=f"Split-step chưa hạ trọng tâm đủ (gối gập {max_knee_flexion:.0f} deg)",
+                frame_indices=[rep.peak_idx],
+                recommendation="Hạ nhẹ gối khi tiếp đất để sẵn sàng bật về hướng cầu.",
+            ))
+            score -= 20
+
+        if stance_width < self.STANCE_WIDTH_MIN:
+            issues.append(Issue(
+                code="BADMINTON_SPLIT_STEP_STANCE_NARROW",
+                severity="MEDIUM",
+                message_vi=f"Khoảng cách hai chân còn hẹp (ratio {stance_width:.2f})",
+                frame_indices=[rep.peak_idx],
+                recommendation="Tiếp đất rộng hơn vai một chút để đổi hướng nhanh và cân bằng hơn.",
+            ))
+            score -= 15
+
+        if not math.isnan(torso_lean) and torso_lean > self.TORSO_LEAN_MAX:
+            issues.append(Issue(
+                code="BADMINTON_TORSO_OVERLEAN",
+                severity="LOW",
+                message_vi=f"Thân người đổ quá nhiều khi split-step ({torso_lean:.0f} deg)",
+                frame_indices=[rep.peak_idx],
+                recommendation="Giữ ngực mở và trọng tâm ở giữa hai chân khi tiếp đất.",
+            ))
+            score -= 5
+
+        score = max(0, score)
+        return RepEvaluation(
+            rep_index=rep.rep_index,
+            score=score,
+            passed=score >= 70 and not any(i.severity == "HIGH" for i in issues),
+            issues=issues,
+            metrics={
+                "max_knee_flexion": round(max_knee_flexion, 1),
+                "stance_width_ratio": round(stance_width, 3),
+                "torso_lean_max": round(torso_lean, 1) if not math.isnan(torso_lean) else None,
+            },
+            keyframes={"start": rep.start_idx, "peak": rep.peak_idx, "end": rep.end_idx},
+        )
+
+
+class BaseBadmintonFootworkDrillRule(BadmintonSplitStepRule):
+    equipment = ["bodyweight"]
+
+
+@register_rule
+class BadmintonFrontCornersFootworkRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_front_corners_footwork"
+    display_name_vi = "Cầu lông - Di chuyển 2 góc lưới"
+
+
+@register_rule
+class BadmintonRearCornersFootworkRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_rear_corners_footwork"
+    display_name_vi = "Cầu lông - Di chuyển 2 góc cuối sân"
+
+
+@register_rule
+class BadmintonMidCornersFootworkRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_mid_corners_footwork"
+    display_name_vi = "Cầu lông - Di chuyển 2 góc giữa sân"
+
+
+@register_rule
+class BadmintonForwardBackwardFootworkRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_forward_backward_footwork"
+    display_name_vi = "Cầu lông - Di chuyển tiến lùi thẳng đứng"
+
+
+@register_rule
+class BadmintonMultiPointFootworkRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_multi_point_footwork"
+    display_name_vi = "Cầu lông - Di chuyển đa điểm"
+
+
+@register_rule
+class BadmintonJumpRopeRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_jump_rope"
+    display_name_vi = "Cầu lông - Nhảy dây"
+    equipment = ["jump_rope"]
+    KNEE_BEND_MIN = 18.0
+    STANCE_WIDTH_MIN = 0.85
+    TORSO_LEAN_MAX = 30.0
+
+
+@register_rule
+class BadmintonIntervalRunRule(BaseBadmintonFootworkDrillRule):
+    name = "badminton_interval_run"
+    display_name_vi = "Cầu lông - Chạy biến tốc"
+    KNEE_BEND_MIN = 24.0
+    STANCE_WIDTH_MIN = 0.90
+    TORSO_LEAN_MAX = 42.0

@@ -48,10 +48,24 @@ def test_exercises_lists_all_registered_rules(client):
     assert names == {
         "squat", "deadlift", "bench_press", "push_up", "bicep_curl",
         "overhead_press", "pull_up", "lunge", "plank", "lateral_raise",
-        "badminton",
+        "badminton_backhand_clear",
+        "badminton_clear", "badminton_smash", "badminton_drop_shot",
+        "badminton_defensive_block", "badminton_drive",
+        "badminton_forward_backward_footwork", "badminton_front_corners_footwork",
+        "badminton_heavy_racket", "badminton_high_serve", "badminton_interval_run",
+        "badminton_juggle", "badminton_jump_rope", "badminton_jump_smash",
+        "badminton_lift_shot", "badminton_low_serve", "badminton_lunge",
+        "badminton_mid_corners_footwork", "badminton_multi_point_footwork",
+        "badminton_multi_shuttle", "badminton_net_kill", "badminton_net_shot",
+        "badminton_push_shot", "badminton_rear_corners_footwork", "badminton_serve",
+        "badminton_split_step", "badminton_wall_rally",
+        "yoga_boat_pose", "yoga_bridge_pose",
+        "yoga_chair_pose", "yoga_cobra_pose", "yoga_downward_dog",
+        "yoga_child_pose", "yoga_low_lunge", "yoga_tree_pose",
+        "yoga_triangle_pose", "yoga_warrior_ii",
     }
-    badminton = next(exercise for exercise in exercises if exercise["name"] == "badminton")
-    assert badminton["display_name_vi"] == "Cầu lông"
+    badminton = next(exercise for exercise in exercises if exercise["name"] == "badminton_smash")
+    assert badminton["display_name_vi"] == "Cầu lông - Đập cầu"
     assert badminton["category"] == "racket_sport"
     assert "BADMINTON_CONTACT_TOO_LOW" in badminton["issue_codes"]
 
@@ -63,6 +77,11 @@ def test_exercises_lists_all_registered_rules(client):
     plank = next(exercise for exercise in exercises if exercise["name"] == "plank")
     assert plank["movement_type"] == "hold"
     assert plank["category"] == "core"
+
+    yoga = next(exercise for exercise in exercises if exercise["name"] == "yoga_tree_pose")
+    assert yoga["display_name_vi"] == "Yoga - Tư thế cây"
+    assert yoga["movement_type"] == "hold"
+    assert yoga["category"] == "yoga"
 
 
 def _fake_report(exercise: str = "squat") -> AnalysisReport:
@@ -110,7 +129,43 @@ def test_analyze_happy_path_returns_report_json(client):
     "lunge",
     "plank",
     "lateral_raise",
-    "badminton",
+    "badminton_backhand_clear",
+    "badminton_clear",
+    "badminton_defensive_block",
+    "badminton_forward_backward_footwork",
+    "badminton_front_corners_footwork",
+    "badminton_heavy_racket",
+    "badminton_high_serve",
+    "badminton_interval_run",
+    "badminton_juggle",
+    "badminton_jump_rope",
+    "badminton_jump_smash",
+    "badminton_lift_shot",
+    "badminton_low_serve",
+    "badminton_smash",
+    "badminton_drop_shot",
+    "badminton_drive",
+    "badminton_lunge",
+    "badminton_mid_corners_footwork",
+    "badminton_multi_point_footwork",
+    "badminton_multi_shuttle",
+    "badminton_net_kill",
+    "badminton_net_shot",
+    "badminton_push_shot",
+    "badminton_rear_corners_footwork",
+    "badminton_serve",
+    "badminton_split_step",
+    "badminton_wall_rally",
+    "yoga_boat_pose",
+    "yoga_bridge_pose",
+    "yoga_chair_pose",
+    "yoga_child_pose",
+    "yoga_cobra_pose",
+    "yoga_downward_dog",
+    "yoga_low_lunge",
+    "yoga_tree_pose",
+    "yoga_triangle_pose",
+    "yoga_warrior_ii",
 ])
 def test_analyze_accepts_registered_exercise_names(client, exercise):
     client.app.state.analyzer_default.analyze.return_value = _fake_report(exercise=exercise)

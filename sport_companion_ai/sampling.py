@@ -12,6 +12,15 @@ class SkeletonOutputMode(str, Enum):
     NONE = "none"
 
 
+def _sample_frames(frames: list[Frame], fps: int) -> list[Frame]:
+    step = max(1, fps // 5)
+    sampled = [frames[i] for i in range(0, len(frames), step)]
+    if any(frame.skeleton is not None for frame in sampled):
+        return sampled
+    skeleton_frames = [frame for frame in frames if frame.skeleton is not None]
+    return skeleton_frames or sampled
+
+
 def select_frames_for_output(
     frames: list[Frame],
     reps: list[RepEvaluation],
@@ -23,8 +32,7 @@ def select_frames_for_output(
     if mode is SkeletonOutputMode.FULL:
         return list(frames)
     if mode is SkeletonOutputMode.SAMPLED:
-        step = max(1, fps // 5)
-        return [frames[i] for i in range(0, len(frames), step)]
+        return _sample_frames(frames, fps)
     if mode is SkeletonOutputMode.KEYFRAMES:
         wanted: set[int] = set()
         for rep in reps:
@@ -34,5 +42,10 @@ def select_frames_for_output(
                     wanted.add(idx)
             for issue in rep.issues:
                 wanted.update(issue.frame_indices)
-        return [frames[i] for i in sorted(wanted) if 0 <= i < len(frames)]
+        if not wanted:
+            return _sample_frames(frames, fps)
+        out = [frames[i] for i in sorted(wanted) if 0 <= i < len(frames)]
+        if any(frame.skeleton is not None for frame in out):
+            return out
+        return _sample_frames(frames, fps)
     raise ValueError(f"unknown mode: {mode}")

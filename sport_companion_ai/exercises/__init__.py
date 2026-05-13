@@ -11,4 +11,5 @@ from sport_companion_ai.exercises import (  # noqa: F401
     pullup,
     pushup,
     squat,
+    yoga,
 )
