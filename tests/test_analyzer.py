@@ -8,6 +8,7 @@ from sport_companion_ai.errors import UnsupportedExerciseError
 from sport_companion_ai.pose.schema import Frame, Keypoint, Skeleton
 from sport_companion_ai.report import VideoMeta
 from tests.exercises._helpers import make_squat_rep_frames
+from tests.exercises.test_new_rules import make_plank_frames, make_press_frames
 
 
 def _stub_extractor(rep_frames):
@@ -66,3 +67,31 @@ def test_zero_reps_emits_warning(mocker):
     report = analyzer.analyze("dummy.mp4", exercise="squat")
     assert report.total_reps == 0
     assert any(w.code == "NO_REPS_DETECTED" for w in report.warnings)
+
+
+def test_full_pipeline_overhead_press(mocker):
+    rep_frames = make_press_frames()
+    n = len(rep_frames)
+    mocker.patch("sport_companion_ai.analyzer.read_video", return_value=_stub_video_reader(n))
+
+    analyzer = VideoAnalyzer(pose_extractor=_stub_extractor(rep_frames))
+    report = analyzer.analyze("dummy.mp4", exercise="overhead_press")
+
+    assert report.exercise == "overhead_press"
+    assert report.total_reps == 1
+    assert report.passed_reps == 1
+    assert report.avg_score >= 90
+
+
+def test_full_pipeline_plank_hold(mocker):
+    rep_frames = make_plank_frames()
+    n = len(rep_frames)
+    mocker.patch("sport_companion_ai.analyzer.read_video", return_value=_stub_video_reader(n))
+
+    analyzer = VideoAnalyzer(pose_extractor=_stub_extractor(rep_frames))
+    report = analyzer.analyze("dummy.mp4", exercise="plank")
+
+    assert report.exercise == "plank"
+    assert report.total_reps == 1
+    assert report.passed_reps == 1
+    assert report.reps[0].metrics["hold_duration_ms"] >= 10000

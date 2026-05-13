@@ -121,5 +121,5 @@ def pytest_sessionfinish(session, exitstatus):
             lines.append("```")
             lines.append("")
 
-    out.write_text("\n".join(lines) + "\n")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"\n[results] wrote {out} ({n_pass}/{n_total} passed)")

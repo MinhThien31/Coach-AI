@@ -7,6 +7,7 @@ from sport_companion_ai.pose.schema import Frame
 
 
 Severity = Literal["LOW", "MEDIUM", "HIGH"]
+AiFeedbackStatus = Literal["good", "warning", "critical", "unknown"]
 
 
 class Issue(BaseModel):
@@ -54,6 +55,39 @@ class SkeletonSchema(BaseModel):
     coordinate_space: str = "normalized"
 
 
+class AiAspectFeedback(BaseModel):
+    key: str
+    title: str
+    status: AiFeedbackStatus = "unknown"
+    score: int | None = None
+    actual: str = ""
+    ideal: str = ""
+    message: str = ""
+    recommendation: str = ""
+
+
+class AiJointFeedback(BaseModel):
+    key: str
+    title: str
+    status: AiFeedbackStatus = "unknown"
+    confidence: int | None = None
+    message: str = ""
+
+
+class AiPriorityItem(BaseModel):
+    title: str
+    message: str = ""
+    recommendation: str = ""
+
+
+class AiFeedback(BaseModel):
+    overall_summary: str = ""
+    aspects: list[AiAspectFeedback] = []
+    joint_analysis: list[AiJointFeedback] = []
+    priority_items: list[AiPriorityItem] = []
+    suggestions: list[str] = []
+
+
 class AnalysisReport(BaseModel):
     exercise: str
     version: str = "0.1.0"
@@ -66,5 +100,6 @@ class AnalysisReport(BaseModel):
     passed_reps: int = 0
     avg_score: float = 0.0
     session_summary: str | None = None
+    ai_feedback: AiFeedback | None = None
     reps: list[RepEvaluation] = []
     warnings: list[AnalysisWarning] = []

@@ -28,6 +28,15 @@ def _hip_alignment_offset(skel) -> float:
 @register_rule
 class PushUpRule(ExerciseRule):
     name = "push_up"
+    display_name_vi = "Push-up"
+    category = "upper_body_push"
+    equipment = ["bodyweight"]
+    primary_joints = ["shoulder", "elbow", "core"]
+    issue_codes = [
+        "PUSHUP_PARTIAL_ROM",
+        "PUSHUP_HIP_SAG",
+        "PUSHUP_HIP_PIKE",
+    ]
     primary_angle = "elbow"
     rep_threshold_low = 110.0
     rep_threshold_high = 160.0

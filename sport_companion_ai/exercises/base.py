@@ -31,6 +31,12 @@ class ExerciseRule(ABC):
     rep_threshold_low: ClassVar[float]
     rep_threshold_high: ClassVar[float]
     fps: ClassVar[int] = 30
+    display_name_vi: ClassVar[str] = ""
+    category: ClassVar[str] = "strength"
+    equipment: ClassVar[list[str]] = []
+    movement_type: ClassVar[str] = "repetition"
+    primary_joints: ClassVar[list[str]] = []
+    issue_codes: ClassVar[list[str]] = []
 
     @classmethod
     def get(cls, name: str) -> type["ExerciseRule"]:
@@ -38,6 +44,18 @@ class ExerciseRule(ABC):
             return EXERCISE_REGISTRY[name]
         except KeyError as exc:
             raise UnsupportedExerciseError(f"Unknown exercise: {name!r}") from exc
+
+    @classmethod
+    def metadata(cls) -> dict[str, object]:
+        return {
+            "name": cls.name,
+            "display_name_vi": cls.display_name_vi or cls.name.replace("_", " ").title(),
+            "category": cls.category,
+            "equipment": list(cls.equipment),
+            "movement_type": cls.movement_type,
+            "primary_joints": list(cls.primary_joints),
+            "issue_codes": list(cls.issue_codes),
+        }
 
     @abstractmethod
     def _primary_angle_series(self, frames: list[Frame]) -> list[float]:

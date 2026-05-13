@@ -22,6 +22,15 @@ def _elbow_flare(skel) -> float:
 @register_rule
 class BenchRule(ExerciseRule):
     name = "bench_press"
+    display_name_vi = "Bench press"
+    category = "upper_body_push"
+    equipment = ["barbell", "bench"]
+    primary_joints = ["shoulder", "elbow", "wrist"]
+    issue_codes = [
+        "BENCH_PARTIAL_ROM",
+        "BENCH_ELBOW_FLARE",
+        "BENCH_ASYMMETRY",
+    ]
     primary_angle = "elbow"
     rep_threshold_low = 100.0
     rep_threshold_high = 160.0

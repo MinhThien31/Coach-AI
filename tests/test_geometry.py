@@ -3,7 +3,8 @@ import pytest
 
 from sport_companion_ai.geometry import (
     angle_3pt, angle_with_vertical,
-    knee_angle, elbow_angle, hip_angle, back_angle, knee_valgus_ratio,
+    knee_angle, elbow_angle, hip_angle, shoulder_angle, back_angle,
+    torso_alignment_offset, knee_valgus_ratio,
 )
 from sport_companion_ai.pose.schema import Keypoint, Skeleton
 
@@ -77,6 +78,29 @@ def test_back_angle_leaning_forward():
         left_shoulder=(0.6, 0.4), right_shoulder=(0.8, 0.4),
     )
     assert back_angle(skel) == pytest.approx(45.0, abs=1.0)
+
+
+def test_shoulder_angle_arm_at_side_is_zero():
+    skel = make_skeleton(
+        left_hip=(0.5, 0.7), left_shoulder=(0.5, 0.5), left_elbow=(0.5, 0.8),
+    )
+    assert shoulder_angle(skel, side="left") == pytest.approx(0.0, abs=0.1)
+
+
+def test_shoulder_angle_arm_horizontal_is_90():
+    skel = make_skeleton(
+        left_hip=(0.5, 0.7), left_shoulder=(0.5, 0.5), left_elbow=(0.7, 0.5),
+    )
+    assert shoulder_angle(skel, side="left") == pytest.approx(90.0, abs=0.1)
+
+
+def test_torso_alignment_offset_positive_for_hip_sag():
+    skel = make_skeleton(
+        left_shoulder=(0.4, 0.3), right_shoulder=(0.6, 0.3),
+        left_hip=(0.4, 0.6), right_hip=(0.6, 0.6),
+        left_ankle=(0.4, 0.7), right_ankle=(0.6, 0.7),
+    )
+    assert torso_alignment_offset(skel) == pytest.approx(0.1, abs=0.01)
 
 
 def test_knee_valgus_ratio_neutral_is_zero():

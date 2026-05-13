@@ -18,6 +18,17 @@ from sport_companion_ai.report import Issue, Rep, RepEvaluation
 @register_rule
 class SquatRule(ExerciseRule):
     name = "squat"
+    display_name_vi = "Squat"
+    category = "lower_body"
+    equipment = ["bodyweight", "barbell"]
+    primary_joints = ["hip", "knee", "ankle"]
+    issue_codes = [
+        "SQUAT_DEPTH_INSUFFICIENT",
+        "SQUAT_BACK_TOO_VERTICAL",
+        "SQUAT_FORWARD_LEAN",
+        "SQUAT_KNEE_VALGUS",
+        "SQUAT_TOO_FAST",
+    ]
     primary_angle = "knee"
     rep_threshold_low = 100.0
     rep_threshold_high = 160.0

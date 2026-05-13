@@ -43,9 +43,20 @@ def test_exercises_lists_all_registered_rules(client):
     r = client.get("/exercises")
     assert r.status_code == 200
     data = r.json()
-    assert set(data["exercises"]) == {
+    exercises = data["exercises"]
+    names = {exercise["name"] for exercise in exercises}
+    assert names == {
         "squat", "deadlift", "bench_press", "push_up", "bicep_curl",
+        "overhead_press", "pull_up", "lunge", "plank", "lateral_raise",
     }
+    overhead = next(exercise for exercise in exercises if exercise["name"] == "overhead_press")
+    assert overhead["display_name_vi"] == "Overhead press"
+    assert overhead["movement_type"] == "repetition"
+    assert "OHP_PARTIAL_LOCKOUT" in overhead["issue_codes"]
+
+    plank = next(exercise for exercise in exercises if exercise["name"] == "plank")
+    assert plank["movement_type"] == "hold"
+    assert plank["category"] == "core"
 
 
 def _fake_report(exercise: str = "squat") -> AnalysisReport:
@@ -80,6 +91,31 @@ def test_analyze_happy_path_returns_report_json(client):
     assert isinstance(args[0], str) and args[0].endswith(".mp4")
     # the temp file should have been cleaned up
     assert not Path(args[0]).exists()
+
+
+@pytest.mark.parametrize("exercise", [
+    "squat",
+    "deadlift",
+    "bench_press",
+    "push_up",
+    "bicep_curl",
+    "overhead_press",
+    "pull_up",
+    "lunge",
+    "plank",
+    "lateral_raise",
+])
+def test_analyze_accepts_registered_exercise_names(client, exercise):
+    client.app.state.analyzer_default.analyze.return_value = _fake_report(exercise=exercise)
+    files = {"video": ("x.mp4", io.BytesIO(b"x" * 1024), "video/mp4")}
+    data = {"exercise": exercise}
+
+    r = client.post("/analyze", files=files, data=data)
+
+    assert r.status_code == 200
+    assert r.json()["exercise"] == exercise
+    _, kwargs = client.app.state.analyzer_default.analyze.call_args
+    assert kwargs["exercise"] == exercise
 
 
 def test_analyze_missing_exercise_returns_422(client):
@@ -124,6 +160,7 @@ def test_analyze_too_large_returns_413(client):
         max_video_seconds=60,
         cors_origins=("*",),
         nvidia_api_key=None,
+        nvidia_nim_model="qwen/qwen3-next-80b-a3b-instruct",
     )
     big = io.BytesIO(b"x" * (2 * (1 << 20)))  # 2 MiB > 1 MiB limit
     files = {"video": ("big.mp4", big, "video/mp4")}

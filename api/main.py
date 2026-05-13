@@ -32,7 +32,10 @@ async def lifespan(app: FastAPI):
     if settings.nvidia_api_key:
         app.state.analyzer_enriched = VideoAnalyzer(
             pose_extractor=extractor,
-            enricher=NvidiaNimEnricher(api_key=settings.nvidia_api_key),
+            enricher=NvidiaNimEnricher(
+                api_key=settings.nvidia_api_key,
+                model=settings.nvidia_nim_model,
+            ),
         )
     else:
         app.state.analyzer_enriched = None

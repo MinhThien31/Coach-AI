@@ -20,6 +20,15 @@ def _elbow_drift(skel) -> float:
 @register_rule
 class BicepCurlRule(ExerciseRule):
     name = "bicep_curl"
+    display_name_vi = "Bicep curl"
+    category = "upper_body_pull"
+    equipment = ["dumbbell", "barbell", "cable"]
+    primary_joints = ["elbow", "shoulder"]
+    issue_codes = [
+        "CURL_PARTIAL_ROM",
+        "CURL_ELBOW_DRIFT",
+        "CURL_TOO_FAST",
+    ]
     primary_angle = "elbow"
     rep_threshold_low = 70.0
     rep_threshold_high = 150.0

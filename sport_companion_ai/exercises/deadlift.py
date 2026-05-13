@@ -22,6 +22,14 @@ def _back_curvature(skel) -> float:
 @register_rule
 class DeadliftRule(ExerciseRule):
     name = "deadlift"
+    display_name_vi = "Deadlift"
+    category = "posterior_chain"
+    equipment = ["barbell"]
+    primary_joints = ["hip", "knee", "spine"]
+    issue_codes = [
+        "DEADLIFT_BACK_ROUND",
+        "DEADLIFT_PARTIAL_LOCKOUT",
+    ]
     primary_angle = "hip"
     rep_threshold_low = 100.0
     rep_threshold_high = 155.0

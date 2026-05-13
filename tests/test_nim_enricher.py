@@ -42,6 +42,90 @@ def test_success_sets_summary_and_enriched(mocker):
     assert out.session_summary == "Tóm tắt buổi tập"
 
 
+def test_success_sets_structured_ai_feedback(mocker):
+    content = """
+    {
+      "overall_summary": "Squat khá tốt nhưng đầu gối cần kiểm soát thêm.",
+      "aspects": [
+        {
+          "key": "knee",
+          "title": "Đầu gối",
+          "status": "warning",
+          "score": 72,
+          "actual": "valgus 0.18",
+          "ideal": "< 0.15",
+          "message": "Đầu gối có xu hướng đổ vào trong ở đáy rep.",
+          "recommendation": "Đẩy gối theo hướng mũi chân khi xuống và lên."
+        }
+      ],
+      "joint_analysis": [
+        {
+          "key": "left_knee",
+          "title": "Đầu gối trái",
+          "status": "warning",
+          "confidence": 88,
+          "message": "Khớp gối trái cần theo dõi kỹ."
+        }
+      ],
+      "priority_items": [
+        {
+          "title": "Đầu gối",
+          "message": "Có valgus ở đáy rep.",
+          "recommendation": "Tập banded squat chậm."
+        }
+      ],
+      "suggestions": ["Giảm tốc độ rep và kiểm soát đáy squat."]
+    }
+    """
+    mock_client = mocker.MagicMock()
+    mock_client.post.return_value = _ok_response(content)
+    mock_client.__enter__ = lambda s: s
+    mock_client.__exit__ = lambda s, *a: None
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    out = NvidiaNimEnricher(api_key="nvapi-fake").enrich(base_report())
+
+    assert out.enriched is True
+    assert out.session_summary == "Squat khá tốt nhưng đầu gối cần kiểm soát thêm."
+    assert out.ai_feedback is not None
+    assert out.ai_feedback.aspects[0].title == "Đầu gối"
+    assert out.ai_feedback.joint_analysis[0].confidence == 88
+    assert out.ai_feedback.suggestions == ["Giảm tốc độ rep và kiểm soát đáy squat."]
+
+
+def test_extracts_json_with_trailing_text(mocker):
+    content = """{"overall_summary":"ok","aspects":[],"joint_analysis":[],
+    "priority_items":[],"suggestions":[]} trailing text"""
+    mock_client = mocker.MagicMock()
+    mock_client.post.return_value = _ok_response(content)
+    mock_client.__enter__ = lambda s: s
+    mock_client.__exit__ = lambda s, *a: None
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    out = NvidiaNimEnricher(api_key="nvapi-fake").enrich(base_report())
+
+    assert out.ai_feedback is not None
+    assert out.session_summary == "ok"
+
+
+def test_call_uses_configured_model_and_json_mode(mocker):
+    mock_client = mocker.MagicMock()
+    mock_client.post.return_value = _ok_response(
+        '{"overall_summary":"ok","aspects":[],"joint_analysis":[],'
+        '"priority_items":[],"suggestions":[]}',
+    )
+    mock_client.__enter__ = lambda s: s
+    mock_client.__exit__ = lambda s, *a: None
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    NvidiaNimEnricher(api_key="nvapi-fake", model="nvidia/custom-model").enrich(base_report())
+
+    _, kwargs = mock_client.post.call_args
+    assert kwargs["json"]["model"] == "nvidia/custom-model"
+    assert kwargs["json"]["response_format"] == {"type": "json_object"}
+    assert kwargs["json"]["max_tokens"] == 4000
+
+
 def test_invariants_score_metrics_codes_unchanged(mocker):
     mock_client = mocker.MagicMock()
     mock_client.post.return_value = _ok_response("ok")

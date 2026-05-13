@@ -1,0 +1,1691 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sport Companion AI - AI Output Test</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --soft: #f3f5f8;
+        --soft-2: #f8fafc;
+        --line: #e5e7eb;
+        --text: #0f172a;
+        --muted: #667085;
+        --purple: #8b1cf6;
+        --purple-soft: #f1e8ff;
+        --orange: #f59e0b;
+        --orange-soft: #fff7df;
+        --green: #10b981;
+        --green-soft: #e9fbf3;
+        --danger: #ef4444;
+        --danger-soft: #fff1f2;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.08), 0 1px 3px rgba(16, 24, 40, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 50% -90px, rgba(168, 85, 247, 0.2), transparent 270px),
+          var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 14px;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .app {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 18px 0 34px;
+      }
+
+      .crumbs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .crumb {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 0 16px;
+        border: 1px solid #e7d7c7;
+        border-radius: 999px;
+        background: #fffaf4;
+        color: #ea580c;
+        font-weight: 750;
+      }
+
+      .crumb.current {
+        border-color: #d7c8ff;
+        background: #f5efff;
+        color: var(--purple);
+      }
+
+      .chev {
+        color: #cbd5e1;
+      }
+
+      .tester,
+      .hero-card,
+      .tabbar,
+      .content-card,
+      .action-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .tester {
+        margin-bottom: 16px;
+        overflow: hidden;
+      }
+
+      .tester-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .tester-title {
+        font-weight: 850;
+      }
+
+      .hint {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .api-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--soft-2);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .api-status::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+      }
+
+      .api-status.ok::before {
+        background: var(--green);
+      }
+
+      .api-status.bad::before {
+        background: var(--danger);
+      }
+
+      .test-form {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr 0.82fr 0.82fr auto auto;
+        align-items: end;
+        gap: 12px;
+        padding: 14px 18px 18px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      .field label {
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      input[type="text"],
+      input[type="file"],
+      select {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        color: var(--text);
+        padding: 0 12px;
+      }
+
+      input[type="file"] {
+        padding: 9px 12px;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        color: #334155;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .toggle input {
+        accent-color: var(--purple);
+      }
+
+      .btn {
+        min-height: 42px;
+        border: 0;
+        border-radius: 12px;
+        padding: 0 18px;
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .btn.primary {
+        background: linear-gradient(135deg, #7c3aed, #a21caf);
+        color: #fff;
+      }
+
+      .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .progress {
+        display: none;
+        padding: 0 18px 16px;
+      }
+
+      .progress.active {
+        display: block;
+      }
+
+      .bar-track {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #edf0f4;
+      }
+
+      .bar-fill {
+        display: block;
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #8b1cf6, #f59e0b);
+        transition: width 160ms ease;
+      }
+
+      .hero-card {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        min-height: 150px;
+        padding: 24px 34px;
+      }
+
+      .motion-card {
+        margin-top: 18px;
+        padding: 18px;
+      }
+
+      .motion-layout {
+        display: grid;
+        grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+        align-items: stretch;
+        gap: 18px;
+      }
+
+      .pose-stage {
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        background:
+          linear-gradient(rgba(34, 211, 238, 0.055) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(34, 211, 238, 0.055) 1px, transparent 1px),
+          #071126;
+        background-size: 24px 24px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+        aspect-ratio: 9 / 14;
+      }
+
+      .pose-stage canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .pose-label {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        color: #dbeafe;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .pose-score {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        min-width: 48px;
+        padding: 5px 8px;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.14);
+        color: #fbbf24;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 950;
+      }
+
+      .pose-controls {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pose-play {
+        width: 36px;
+        height: 36px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 50%;
+        background: rgba(15, 23, 42, 0.78);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 950;
+      }
+
+      .pose-scrub {
+        width: 100%;
+        accent-color: var(--orange);
+      }
+
+      .motion-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .motion-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 950;
+      }
+
+      .motion-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .motion-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--soft-2);
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .score-ring {
+        --score: 0;
+        width: 94px;
+        height: 94px;
+        flex: 0 0 94px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at center, #fff 0 57%, transparent 58%),
+          conic-gradient(var(--orange) calc(var(--score) * 1%), #2f3f54 0 86%, #e5e7eb 0);
+      }
+
+      .score-inner {
+        text-align: center;
+        line-height: 1;
+      }
+
+      .score-value {
+        color: var(--orange);
+        font-size: 31px;
+        font-weight: 950;
+      }
+
+      .score-max {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .hero-title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .exercise-icon {
+        color: var(--orange);
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.15;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .badge.warn {
+        border: 1px solid #facc15;
+        background: var(--orange-soft);
+        color: #d97706;
+      }
+
+      .badge.critical {
+        border: 1px solid #fca5a5;
+        background: var(--danger-soft);
+        color: #dc2626;
+      }
+
+      .badge.good {
+        border: 1px solid #86efac;
+        background: var(--green-soft);
+        color: #059669;
+      }
+
+      .hero-copy {
+        margin: 0 0 14px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .chip {
+        min-width: 90px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: var(--soft-2);
+      }
+
+      .chip-label {
+        display: block;
+        color: #98a2b3;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .chip-value {
+        display: block;
+        margin-top: 3px;
+        color: #00a66a;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      .chip.warn .chip-value {
+        color: #f97316;
+      }
+
+      .chip.critical .chip-value {
+        color: #dc2626;
+      }
+
+      .tabbar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        margin: 18px 0;
+        padding: 4px;
+        background: #f1f3f6;
+      }
+
+      .tab {
+        min-height: 42px;
+        border: 0;
+        border-radius: 14px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .tab.active {
+        background: #fff;
+        color: var(--purple);
+        box-shadow: var(--shadow);
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: grid;
+        gap: 16px;
+      }
+
+      .metric-card {
+        padding: 18px 10px 16px;
+      }
+
+      .metric-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 10px;
+      }
+
+      .metric-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 900;
+      }
+
+      .metric-score {
+        color: var(--green);
+        font-weight: 950;
+        font-size: 16px;
+      }
+
+      .metric-score.warn,
+      .metric-bar.warn span,
+      .box.actual.warn strong {
+        color: var(--orange);
+      }
+
+      .metric-score.critical,
+      .box.actual.critical strong {
+        color: var(--danger);
+      }
+
+      .metric-bar {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #edf0f4;
+      }
+
+      .metric-bar span {
+        display: block;
+        height: 100%;
+        width: var(--w, 0%);
+        border-radius: inherit;
+        background: var(--green);
+      }
+
+      .metric-bar.warn span {
+        background: var(--orange);
+      }
+
+      .metric-bar.critical span {
+        background: var(--danger);
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: 1fr 34px 1fr;
+        align-items: center;
+        gap: 12px;
+        margin: 14px 0 10px;
+      }
+
+      .box {
+        min-height: 58px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--soft-2);
+        text-align: center;
+      }
+
+      .box.ideal {
+        background: var(--green-soft);
+      }
+
+      .box small {
+        display: block;
+        color: #98a2b3;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .box strong {
+        display: block;
+        margin-top: 2px;
+        color: #00a66a;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      .arrow {
+        color: #cbd5e1;
+        text-align: center;
+        font-size: 20px;
+      }
+
+      .metric-desc {
+        margin: 0;
+        color: #334155;
+        line-height: 1.55;
+      }
+
+      .joint-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .joint-title {
+        font-weight: 950;
+      }
+
+      .joint-meta {
+        color: #98a2b3;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .joint-row {
+        display: grid;
+        grid-template-columns: minmax(160px, 1fr) minmax(140px, 230px) 54px 104px;
+        align-items: center;
+        gap: 12px;
+        min-height: 56px;
+        padding: 0 24px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .joint-name {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        color: #344054;
+      }
+
+      .dot {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+
+      .dot.warn {
+        background: var(--orange);
+      }
+
+      .dot.critical {
+        background: var(--danger);
+      }
+
+      .mini-bar {
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #edf0f4;
+      }
+
+      .mini-bar span {
+        display: block;
+        height: 100%;
+        width: var(--w, 0%);
+        border-radius: inherit;
+        background: var(--green);
+      }
+
+      .mini-bar.warn span {
+        background: var(--orange);
+      }
+
+      .mini-bar.critical span {
+        background: var(--danger);
+      }
+
+      .joint-percent {
+        color: #00a66a;
+        font-weight: 950;
+        text-align: right;
+      }
+
+      .joint-percent.warn {
+        color: var(--orange);
+      }
+
+      .joint-percent.critical {
+        color: var(--danger);
+      }
+
+      .joint-note {
+        grid-column: 1 / -1;
+        margin: -4px 0 12px 25px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .ai-priority {
+        padding: 20px;
+        border: 1px solid #facc15;
+        border-radius: 16px;
+        background: #fffbea;
+      }
+
+      .ai-title {
+        margin-bottom: 12px;
+        color: #ea580c;
+        font-weight: 950;
+      }
+
+      .priority-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        color: #ea580c;
+        line-height: 1.5;
+      }
+
+      .priority-list strong {
+        color: #b45309;
+      }
+
+      .suggestion {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-height: 76px;
+        padding: 18px 20px;
+      }
+
+      .suggestion + .suggestion {
+        border-top: 1px solid var(--line);
+      }
+
+      .num {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        flex: 0 0 36px;
+        border-radius: 12px;
+        background: var(--purple-soft);
+        color: var(--purple);
+        font-weight: 950;
+      }
+
+      .suggestion-text {
+        color: #344054;
+        line-height: 1.55;
+      }
+
+      .coach {
+        padding: 18px 20px;
+        color: #344054;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+
+      .action-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        padding: 20px;
+        background: linear-gradient(135deg, #7c3aed, #a21caf);
+        color: #fff;
+      }
+
+      .action-card strong,
+      .action-card span {
+        display: block;
+      }
+
+      .action-card span {
+        margin-top: 5px;
+        opacity: 0.9;
+      }
+
+      .action-card .btn {
+        background: #fff;
+        color: var(--purple);
+      }
+
+      .empty {
+        padding: 30px;
+        text-align: center;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .error {
+        margin-top: 12px;
+        padding: 13px 16px;
+        border: 1px solid #fecaca;
+        border-radius: 14px;
+        background: #fff1f2;
+        color: #b91c1c;
+      }
+
+      .raw {
+        display: none;
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 14px;
+        background: #111827;
+        color: #d1d5db;
+        overflow: auto;
+        max-height: 360px;
+        white-space: pre-wrap;
+        font-size: 12px;
+      }
+
+      @media (max-width: 980px) {
+        .test-form {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .app {
+          width: min(100% - 20px, 1120px);
+        }
+
+        .test-form,
+        .tabbar,
+        .motion-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-card,
+        .action-card {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .compare,
+        .joint-row {
+          grid-template-columns: 1fr;
+        }
+
+        .arrow {
+          display: none;
+        }
+
+        .joint-row {
+          padding: 14px 18px;
+        }
+
+        .joint-percent {
+          text-align: left;
+        }
+
+        .joint-note {
+          margin: 0 0 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <nav class="crumbs" aria-label="breadcrumb">
+        <span class="crumb">Thể hình</span>
+        <span class="chev">›</span>
+        <span id="crumbExercise" class="crumb current">Squat</span>
+      </nav>
+
+      <section class="tester">
+        <div class="tester-head">
+          <div>
+            <div class="tester-title">Local AI Test</div>
+            <p class="hint">Upload video MP4, gọi API local, rồi render đúng structured AI feedback.</p>
+          </div>
+          <div id="apiStatus" class="api-status">Đang kiểm tra API</div>
+        </div>
+
+        <form id="testForm" class="test-form">
+          <div class="field">
+            <label for="video">Video MP4</label>
+            <input id="video" type="file" accept="video/mp4,video/*" required>
+          </div>
+          <div class="field">
+            <label for="apiBase">API URL</label>
+            <input id="apiBase" type="text" value="http://127.0.0.1:8000" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="exercise">Bài tập</label>
+            <select id="exercise">
+              <option value="squat">squat</option>
+              <option value="deadlift">deadlift</option>
+              <option value="bench_press">bench_press</option>
+              <option value="push_up">push_up</option>
+              <option value="bicep_curl">bicep_curl</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="skeletonOutput">Skeleton</label>
+            <select id="skeletonOutput">
+              <option value="sampled">sampled</option>
+              <option value="keyframes">keyframes</option>
+              <option value="full">full</option>
+              <option value="none">none</option>
+            </select>
+          </div>
+          <label class="toggle">
+            <input id="enrich" type="checkbox" checked>
+            AI gợi ý
+          </label>
+          <button id="submitBtn" class="btn primary" type="submit">Phân tích</button>
+        </form>
+
+        <div id="progress" class="progress">
+          <div class="bar-track"><span id="progressBar" class="bar-fill"></span></div>
+          <p id="progressText" class="hint">Đang upload...</p>
+        </div>
+      </section>
+
+      <section id="result">
+        <section class="content-card empty">
+          Chưa có kết quả. Bật AI gợi ý và phân tích video để backend trả về <strong>ai_feedback</strong>.
+        </section>
+      </section>
+      <pre id="raw" class="raw"></pre>
+    </main>
+
+    <script>
+      const form = document.querySelector("#testForm");
+      const apiBase = document.querySelector("#apiBase");
+      const video = document.querySelector("#video");
+      const exercise = document.querySelector("#exercise");
+      const skeletonOutput = document.querySelector("#skeletonOutput");
+      const enrich = document.querySelector("#enrich");
+      const submitBtn = document.querySelector("#submitBtn");
+      const progress = document.querySelector("#progress");
+      const progressBar = document.querySelector("#progressBar");
+      const progressText = document.querySelector("#progressText");
+      const result = document.querySelector("#result");
+      const raw = document.querySelector("#raw");
+      const apiStatus = document.querySelector("#apiStatus");
+      const crumbExercise = document.querySelector("#crumbExercise");
+      let poseAnimation = null;
+
+      const EXERCISE_LABELS = {
+        squat: "Squat",
+        deadlift: "Deadlift",
+        bench_press: "Bench Press",
+        push_up: "Push-up",
+        bicep_curl: "Bicep Curl",
+        overhead_press: "Overhead Press",
+        pull_up: "Pull-up",
+        lunge: "Lunge",
+        plank: "Plank",
+        lateral_raise: "Lateral Raise",
+      };
+      let exerciseMetadata = {};
+
+      function endpoint(path) {
+        return `${apiBase.value.replace(/\/+$/, "")}${path}`;
+      }
+
+      function displayExercise(name) {
+        return exerciseMetadata[name]?.display_name_vi || EXERCISE_LABELS[name] || name || "Exercise";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function statusClass(status) {
+        return ["warning", "critical"].includes(status) ? status : "good";
+      }
+
+      function statusLabel(status) {
+        if (status === "critical" || status === "warning") {
+          return "Cảnh báo";
+        }
+        if (status === "unknown") {
+          return "Chưa rõ";
+        }
+        return "Tốt";
+      }
+
+      function confidenceClass(confidence) {
+        if (typeof confidence !== "number") {
+          return "warn";
+        }
+        if (confidence > 80) {
+          return "good";
+        }
+        if (confidence < 50) {
+          return "critical";
+        }
+        return "warn";
+      }
+
+      function confidenceLabel(confidence) {
+        if (typeof confidence !== "number") {
+          return "Chưa rõ";
+        }
+        if (confidence > 80) {
+          return "Tốt";
+        }
+        if (confidence < 50) {
+          return "Cảnh báo";
+        }
+        return "Tập thêm";
+      }
+
+      function reportStatus(report) {
+        const aspects = report.ai_feedback?.aspects || [];
+        if (aspects.some((item) => item.status === "critical" || item.status === "warning")) {
+          return "warning";
+        }
+        if (report.total_reps > 0 && report.passed_reps < report.total_reps) {
+          return "warning";
+        }
+        return "good";
+      }
+
+      function parseMaybeJsonObject(text) {
+        if (typeof text !== "string") {
+          return null;
+        }
+        const start = text.indexOf("{");
+        const end = text.lastIndexOf("}");
+        if (start === -1 || end === -1 || end <= start) {
+          return null;
+        }
+        try {
+          const parsed = JSON.parse(text.slice(start, end + 1));
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+            ? parsed
+            : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function normalizeAiFeedback(report) {
+        if (report.ai_feedback) {
+          return report;
+        }
+        const parsed = parseMaybeJsonObject(report.session_summary);
+        if (!parsed) {
+          return report;
+        }
+        const looksStructured = Array.isArray(parsed.aspects)
+          || Array.isArray(parsed.joint_analysis)
+          || Array.isArray(parsed.priority_items)
+          || Array.isArray(parsed.suggestions);
+        if (!looksStructured) {
+          return report;
+        }
+        report.ai_feedback = {
+          overall_summary: parsed.overall_summary || "",
+          aspects: Array.isArray(parsed.aspects) ? parsed.aspects : [],
+          joint_analysis: Array.isArray(parsed.joint_analysis) ? parsed.joint_analysis : [],
+          priority_items: Array.isArray(parsed.priority_items) ? parsed.priority_items : [],
+          suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+        };
+        report.session_summary = report.ai_feedback.overall_summary || report.session_summary;
+        return report;
+      }
+
+      function setBusy(isBusy) {
+        submitBtn.disabled = isBusy;
+        progress.classList.toggle("active", isBusy);
+        if (!isBusy) {
+          progressBar.style.width = "0%";
+        }
+      }
+
+      function setStatus(kind, text) {
+        apiStatus.classList.remove("ok", "bad");
+        if (kind) {
+          apiStatus.classList.add(kind);
+        }
+        apiStatus.textContent = text;
+      }
+
+      async function checkApi() {
+        try {
+          const response = await fetch(endpoint("/health"));
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          setStatus("ok", "API sẵn sàng");
+          await loadExercises();
+        } catch {
+          setStatus("bad", "API chưa chạy");
+        }
+      }
+
+      async function loadExercises() {
+        const response = await fetch(endpoint("/exercises"));
+        if (!response.ok) {
+          return;
+        }
+        const body = await response.json();
+        if (!Array.isArray(body.exercises)) {
+          return;
+        }
+        const current = exercise.value;
+        const items = body.exercises.map((item) => (
+          typeof item === "string"
+            ? { name: item, display_name_vi: EXERCISE_LABELS[item] || item }
+            : item
+        )).filter((item) => item && item.name);
+        exerciseMetadata = Object.fromEntries(items.map((item) => [item.name, item]));
+        exercise.innerHTML = items.map((item) => (
+          `<option value="${escapeHtml(item.name)}">${escapeHtml(item.display_name_vi || item.name)}</option>`
+        )).join("");
+        if (items.some((item) => item.name === current)) {
+          exercise.value = current;
+        }
+        crumbExercise.textContent = displayExercise(exercise.value);
+      }
+
+      function renderHero(report) {
+        const feedback = report.ai_feedback;
+        const score = Math.round(report.avg_score || 0);
+        const status = reportStatus(report);
+        const chips = (feedback?.aspects || []).slice(0, 3).map((item) => `
+          <div class="chip ${statusClass(item.status)}">
+            <span class="chip-label">${escapeHtml(item.title)}</span>
+            <span class="chip-value">${escapeHtml(item.actual || "-")}</span>
+          </div>
+        `).join("");
+        const summary = feedback?.overall_summary || report.session_summary || "AI chưa trả về phân tích có cấu trúc cho lượt phân tích này.";
+
+        return `
+          <section class="hero-card">
+            <div class="score-ring" style="--score:${clamp(score, 0, 100)}">
+              <div class="score-inner">
+                <div class="score-value">${score}</div>
+                <div class="score-max">/100</div>
+              </div>
+            </div>
+            <div class="hero-main">
+              <div class="hero-title">
+                <span class="exercise-icon">⌁</span>
+                <h1>${escapeHtml(displayExercise(report.exercise))}</h1>
+                <span class="badge ${statusClass(status)}">${statusLabel(status)}</span>
+              </div>
+              <p class="hero-copy">${escapeHtml(summary)}</p>
+              <div class="chips">${chips}</div>
+            </div>
+          </section>
+        `;
+      }
+
+      function framesWithSkeleton(report) {
+        return (report.frames || []).filter((frame) => (
+          frame.skeleton && frame.skeleton.keypoints
+        ));
+      }
+
+      function renderMotionPanel(report) {
+        const frames = framesWithSkeleton(report);
+        const keypointCount = report.skeleton_schema?.keypoint_names?.length || 0;
+        if (!frames.length) {
+          return `
+            <section class="content-card motion-card">
+              <div class="empty">
+                Không có skeleton frames để phát 2D. Chọn skeleton là sampled hoặc full rồi phân tích lại.
+              </div>
+            </section>
+          `;
+        }
+
+        return `
+          <section class="content-card motion-card">
+            <div class="motion-layout">
+              <div class="pose-stage">
+                <canvas id="poseCanvas" width="360" height="560"></canvas>
+                <div class="pose-label">${escapeHtml(displayExercise(report.exercise))}</div>
+                <div class="pose-score">${Math.round(report.avg_score || 0)} pts</div>
+                <div class="pose-controls">
+                  <button id="posePlay" class="pose-play" type="button" aria-label="Play pose">Ⅱ</button>
+                  <input id="poseScrub" class="pose-scrub" type="range" min="0" max="${frames.length - 1}" value="0">
+                </div>
+              </div>
+              <div class="motion-copy">
+                <h2 class="motion-title">2D skeleton playback</h2>
+                <p class="hero-copy">
+                  Playback này lấy trực tiếp keypoints trong response API để mô phỏng chuyển động từng khớp.
+                </p>
+                <div class="motion-meta">
+                  <span class="motion-pill">${frames.length} frames</span>
+                  <span class="motion-pill">${keypointCount || "?"} keypoints</span>
+                  <span class="motion-pill">${report.video?.fps || "?"} fps source</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderOverview(report) {
+        const aspects = report.ai_feedback?.aspects || [];
+        if (!aspects.length) {
+          return `<section class="content-card empty">Không có aspect feedback từ AI.</section>`;
+        }
+        return aspects.map((item) => {
+          const score = item.score == null ? 0 : clamp(Math.round(item.score), 0, 100);
+          const cls = statusClass(item.status);
+          return `
+            <article class="content-card metric-card">
+              <div class="metric-top">
+                <div class="metric-title">
+                  <span>${escapeHtml(item.title)}</span>
+                  <span class="badge ${cls}">${statusLabel(item.status)}</span>
+                </div>
+                <div class="metric-score ${cls}">${item.score == null ? "-" : score}</div>
+              </div>
+              <div class="metric-bar ${cls}">
+                <span style="--w:${score}%"></span>
+              </div>
+              <div class="compare">
+                <div class="box actual ${cls}">
+                  <div><small>Thực tế</small><strong>${escapeHtml(item.actual || "-")}</strong></div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="box ideal">
+                  <div><small>Lý tưởng</small><strong>${escapeHtml(item.ideal || "-")}</strong></div>
+                </div>
+              </div>
+              <p class="metric-desc">${escapeHtml(item.message || "")}</p>
+            </article>
+          `;
+        }).join("");
+      }
+
+      function renderJoints(report) {
+        const joints = report.ai_feedback?.joint_analysis || [];
+        if (!joints.length) {
+          return `<section class="content-card empty">Không có joint_analysis từ AI.</section>`;
+        }
+        const knownConf = joints
+          .map((joint) => joint.confidence)
+          .filter((value) => typeof value === "number");
+        const avg = knownConf.length
+          ? Math.round(knownConf.reduce((sum, value) => sum + value, 0) / knownConf.length)
+          : null;
+        const rows = joints.map((joint) => {
+          const hasConfidence = typeof joint.confidence === "number";
+          const confidence = hasConfidence ? clamp(Math.round(joint.confidence), 0, 100) : 0;
+          const cls = confidenceClass(hasConfidence ? confidence : null);
+          return `
+            <div class="joint-row">
+              <div class="joint-name"><span class="dot ${cls}"></span>${escapeHtml(joint.title)}</div>
+              <div class="mini-bar ${cls}"><span style="--w:${confidence}%"></span></div>
+              <div class="joint-percent ${cls}">${hasConfidence ? `${confidence}%` : "-"}</div>
+              <span class="badge ${cls}">${confidenceLabel(hasConfidence ? confidence : null)}</span>
+              ${joint.message ? `<div class="joint-note">${escapeHtml(joint.message)}</div>` : ""}
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <section class="content-card">
+            <div class="joint-head">
+              <div class="joint-title">Phân tích từng khớp</div>
+              <div class="joint-meta">${joints.length} keypoints · ${avg == null ? "-" : `${avg}%`} confidence</div>
+            </div>
+            ${rows}
+          </section>
+        `;
+      }
+
+      function renderAi(report) {
+        const feedback = report.ai_feedback;
+        if (!feedback) {
+          return `
+            <section class="content-card empty">
+              Chưa có structured AI feedback. Hãy bật AI gợi ý và đảm bảo NVIDIA_API_KEY hoạt động.
+              ${report.session_summary ? `<div class="coach">${escapeHtml(report.session_summary)}</div>` : ""}
+            </section>
+          `;
+        }
+        const priorityItems = feedback.priority_items || [];
+        const suggestions = feedback.suggestions || [];
+        const priority = priorityItems.length ? `
+          <section class="ai-priority">
+            <div class="ai-title">Ưu tiên sửa ngay (${priorityItems.length} vấn đề)</div>
+            <ul class="priority-list">
+              ${priorityItems.map((item) => `
+                <li>• <strong>${escapeHtml(item.title)}:</strong> ${escapeHtml(item.message || "")}</li>
+              `).join("")}
+            </ul>
+          </section>
+        ` : "";
+        const suggestionCards = suggestions.length ? `
+          <section class="content-card">
+            ${suggestions.map((item, index) => `
+              <div class="suggestion">
+                <div class="num">${index + 1}</div>
+                <div class="suggestion-text">${escapeHtml(item)}</div>
+              </div>
+            `).join("")}
+          </section>
+        ` : "";
+        const recommendations = priorityItems
+          .filter((item) => item.recommendation)
+          .map((item, index) => `
+            <div class="suggestion">
+              <div class="num">${suggestions.length + index + 1}</div>
+              <div class="suggestion-text">${escapeHtml(item.recommendation)}</div>
+            </div>
+          `).join("");
+        const recommendationCard = recommendations ? `<section class="content-card">${recommendations}</section>` : "";
+
+        return `
+          ${priority}
+          ${suggestionCards}
+          ${recommendationCard}
+          <section class="content-card"><div class="coach">${escapeHtml(feedback.overall_summary || "")}</div></section>
+          <section class="action-card">
+            <div>
+              <strong>Muốn cải thiện ${escapeHtml(displayExercise(report.exercise))} nhanh hơn?</strong>
+              <span>Đặt lịch với HLV Thể hình chuyên nghiệp trên CoachFinder</span>
+            </div>
+            <button class="btn" type="button">Tìm HLV ›</button>
+          </section>
+        `;
+      }
+
+      function stopPoseAnimation() {
+        if (poseAnimation?.rafId) {
+          cancelAnimationFrame(poseAnimation.rafId);
+        }
+        poseAnimation = null;
+      }
+
+      function keypointColor(name, aiJoints) {
+        const normalized = name.replace(/^left_/, "").replace(/^right_/, "");
+        const flagged = aiJoints.some((joint) => {
+          const key = String(joint.key || "").toLowerCase();
+          const title = String(joint.title || "").toLowerCase();
+          const status = String(joint.status || "");
+          if (status !== "warning" && status !== "critical") {
+            return false;
+          }
+          return key.includes(name)
+            || key.includes(normalized)
+            || title.includes(normalized)
+            || (normalized === "knee" && title.includes("gối"))
+            || (normalized === "ankle" && title.includes("chân"))
+            || (normalized === "hip" && title.includes("hông"))
+            || (normalized === "elbow" && title.includes("chỏ"))
+            || (normalized === "shoulder" && title.includes("vai"))
+            || (normalized === "wrist" && title.includes("tay"));
+        });
+        return flagged ? "#f59e0b" : "#10b981";
+      }
+
+      function pointForCanvas(point, canvas, bounds) {
+        const padding = 34;
+        const width = canvas.width - padding * 2;
+        const height = canvas.height - padding * 2;
+        const spanX = Math.max(0.001, bounds.maxX - bounds.minX);
+        const spanY = Math.max(0.001, bounds.maxY - bounds.minY);
+        const scale = Math.min(width / spanX, height / spanY);
+        const usedW = spanX * scale;
+        const usedH = spanY * scale;
+        const offsetX = (canvas.width - usedW) / 2;
+        const offsetY = (canvas.height - usedH) / 2;
+        return {
+          x: offsetX + (point.x - bounds.minX) * scale,
+          y: offsetY + (point.y - bounds.minY) * scale,
+        };
+      }
+
+      function skeletonBounds(frames) {
+        const xs = [];
+        const ys = [];
+        for (const frame of frames) {
+          for (const point of Object.values(frame.skeleton?.keypoints || {})) {
+            if (typeof point.x === "number" && typeof point.y === "number") {
+              xs.push(point.x);
+              ys.push(point.y);
+            }
+          }
+        }
+        if (!xs.length || !ys.length) {
+          return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+        }
+        return {
+          minX: clamp(Math.min(...xs) - 0.06, 0, 1),
+          maxX: clamp(Math.max(...xs) + 0.06, 0, 1),
+          minY: clamp(Math.min(...ys) - 0.06, 0, 1),
+          maxY: clamp(Math.max(...ys) + 0.06, 0, 1),
+        };
+      }
+
+      function drawPoseFrame(ctx, canvas, frame, edges, bounds, aiJoints) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const points = frame.skeleton?.keypoints || {};
+
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = "#1e3a5f";
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= canvas.width; x += 24) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= canvas.height; y += 24) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        for (const [a, b] of edges) {
+          const pa = points[a];
+          const pb = points[b];
+          if (!pa || !pb) {
+            continue;
+          }
+          const ca = pointForCanvas(pa, canvas, bounds);
+          const cb = pointForCanvas(pb, canvas, bounds);
+          const color = keypointColor(a, aiJoints) === "#f59e0b" || keypointColor(b, aiJoints) === "#f59e0b"
+            ? "#f59e0b"
+            : "#18c99a";
+          ctx.save();
+          ctx.shadowBlur = 16;
+          ctx.shadowColor = color;
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = 0.88;
+          ctx.lineWidth = 4;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(ca.x, ca.y);
+          ctx.lineTo(cb.x, cb.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        for (const [name, point] of Object.entries(points)) {
+          const visibility = typeof point.visibility === "number" ? point.visibility : 1;
+          if (visibility < 0.2) {
+            continue;
+          }
+          const { x, y } = pointForCanvas(point, canvas, bounds);
+          const color = keypointColor(name, aiJoints);
+          ctx.save();
+          ctx.globalAlpha = clamp(visibility, 0.35, 1);
+          ctx.shadowBlur = 18;
+          ctx.shadowColor = color;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#ecfeff";
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function initPoseAnimation(report) {
+        stopPoseAnimation();
+        const canvas = document.querySelector("#poseCanvas");
+        const play = document.querySelector("#posePlay");
+        const scrub = document.querySelector("#poseScrub");
+        if (!canvas || !play || !scrub) {
+          return;
+        }
+        const frames = framesWithSkeleton(report);
+        if (!frames.length) {
+          return;
+        }
+        const ctx = canvas.getContext("2d");
+        const edges = report.skeleton_schema?.edges?.length
+          ? report.skeleton_schema.edges
+          : [
+            ["left_shoulder", "right_shoulder"],
+            ["left_shoulder", "left_elbow"], ["left_elbow", "left_wrist"],
+            ["right_shoulder", "right_elbow"], ["right_elbow", "right_wrist"],
+            ["left_shoulder", "left_hip"], ["right_shoulder", "right_hip"],
+            ["left_hip", "right_hip"],
+            ["left_hip", "left_knee"], ["left_knee", "left_ankle"],
+            ["right_hip", "right_knee"], ["right_knee", "right_ankle"],
+          ];
+        const bounds = skeletonBounds(frames);
+        const aiJoints = report.ai_feedback?.joint_analysis || [];
+        const frameMs = report.video?.fps ? Math.max(80, 1000 / Math.min(report.video.fps, 12)) : 120;
+        poseAnimation = {
+          frames,
+          index: 0,
+          lastTick: 0,
+          playing: true,
+          rafId: null,
+        };
+
+        const draw = (time) => {
+          if (!poseAnimation) {
+            return;
+          }
+          if (poseAnimation.playing && (!poseAnimation.lastTick || time - poseAnimation.lastTick >= frameMs)) {
+            poseAnimation.index = (poseAnimation.index + 1) % frames.length;
+            poseAnimation.lastTick = time;
+            scrub.value = String(poseAnimation.index);
+          }
+          drawPoseFrame(ctx, canvas, frames[poseAnimation.index], edges, bounds, aiJoints);
+          poseAnimation.rafId = requestAnimationFrame(draw);
+        };
+
+        play.addEventListener("click", () => {
+          if (!poseAnimation) {
+            return;
+          }
+          poseAnimation.playing = !poseAnimation.playing;
+          play.textContent = poseAnimation.playing ? "Ⅱ" : "▶";
+        });
+
+        scrub.addEventListener("input", () => {
+          if (!poseAnimation) {
+            return;
+          }
+          poseAnimation.index = Number(scrub.value);
+          poseAnimation.playing = false;
+          play.textContent = "▶";
+          drawPoseFrame(ctx, canvas, frames[poseAnimation.index], edges, bounds, aiJoints);
+        });
+
+        drawPoseFrame(ctx, canvas, frames[0], edges, bounds, aiJoints);
+        poseAnimation.rafId = requestAnimationFrame(draw);
+      }
+
+      function activateTab(tabName) {
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.tab === tabName);
+        });
+        document.querySelectorAll(".view").forEach((view) => {
+          view.classList.toggle("active", view.id === `view-${tabName}`);
+        });
+      }
+
+      function renderReport(report) {
+        report = normalizeAiFeedback(report);
+        stopPoseAnimation();
+        crumbExercise.textContent = displayExercise(report.exercise);
+        raw.textContent = JSON.stringify(report, null, 2);
+        result.innerHTML = `
+          ${renderHero(report)}
+          ${renderMotionPanel(report)}
+          <nav class="tabbar">
+            <button class="tab active" type="button" data-tab="overview">Tổng quan</button>
+            <button class="tab" type="button" data-tab="joints">Chi tiết khớp</button>
+            <button class="tab" type="button" data-tab="ai">Đề xuất AI</button>
+          </nav>
+          <section id="view-overview" class="view active">${renderOverview(report)}</section>
+          <section id="view-joints" class="view">${renderJoints(report)}</section>
+          <section id="view-ai" class="view">${renderAi(report)}</section>
+        `;
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+        });
+        initPoseAnimation(report);
+      }
+
+      function renderError(error) {
+        result.innerHTML = `
+          <section class="content-card empty">
+            <strong>Phân tích thất bại</strong>
+            <div class="error">${escapeHtml(error.message || error)}</div>
+          </section>
+        `;
+      }
+
+      function uploadWithProgress(url, data) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", url);
+          xhr.responseType = "text";
+          xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable) {
+              progressBar.style.width = "30%";
+              progressText.textContent = "Đang upload video...";
+              return;
+            }
+            const percent = Math.max(6, Math.round((event.loaded / event.total) * 100));
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = percent >= 100
+              ? "Upload xong, AI đang phân tích..."
+              : `Đang upload ${percent}%...`;
+          };
+          xhr.onload = () => {
+            const contentType = xhr.getResponseHeader("content-type") || "";
+            let body = xhr.responseText;
+            if (contentType.includes("application/json")) {
+              try {
+                body = JSON.parse(xhr.responseText);
+              } catch {
+                body = xhr.responseText;
+              }
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(body);
+            } else {
+              const detail = typeof body === "object" ? JSON.stringify(body) : body;
+              reject(new Error(detail || `HTTP ${xhr.status}`));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Không kết nối được API local."));
+          xhr.send(data);
+        });
+      }
+
+      exercise.addEventListener("change", () => {
+        crumbExercise.textContent = displayExercise(exercise.value);
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!video.files[0]) {
+          renderError(new Error("Hãy chọn một video MP4 trước."));
+          return;
+        }
+        setBusy(true);
+        progressBar.style.width = "8%";
+        progressText.textContent = "Đang chuẩn bị request...";
+        const payload = new FormData();
+        payload.append("video", video.files[0]);
+        payload.append("exercise", exercise.value);
+        payload.append("skeleton_output", skeletonOutput.value);
+        payload.append("enrich", enrich.checked ? "true" : "false");
+        try {
+          const report = await uploadWithProgress(endpoint("/analyze"), payload);
+          progressBar.style.width = "100%";
+          progressText.textContent = "Hoàn tất.";
+          renderReport(report);
+          setStatus("ok", "API sẵn sàng");
+        } catch (error) {
+          setStatus("bad", "API lỗi");
+          renderError(error);
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      checkApi();
+    </script>
+  </body>
+</html>

@@ -48,6 +48,14 @@ def hip_angle(skel: Skeleton, side: str = "left") -> float:
     )
 
 
+def shoulder_angle(skel: Skeleton, side: str = "left") -> float:
+    return angle_3pt(
+        skel.keypoints[f"{side}_hip"],
+        skel.keypoints[f"{side}_shoulder"],
+        skel.keypoints[f"{side}_elbow"],
+    )
+
+
 def back_angle(skel: Skeleton) -> float:
     """Angle of the torso (mid-hip → mid-shoulder) from vertical."""
     lh = skel.keypoints["left_hip"]
@@ -57,6 +65,21 @@ def back_angle(skel: Skeleton) -> float:
     mid_hip = Keypoint(x=(lh.x + rh.x) / 2, y=(lh.y + rh.y) / 2)
     mid_sh = Keypoint(x=(ls.x + rs.x) / 2, y=(ls.y + rs.y) / 2)
     return angle_with_vertical(mid_hip, mid_sh)
+
+
+def torso_alignment_offset(skel: Skeleton) -> float:
+    """Hip offset from the shoulder-ankle line. Positive means hip sag."""
+    ls = skel.keypoints["left_shoulder"]
+    rs = skel.keypoints["right_shoulder"]
+    lh = skel.keypoints["left_hip"]
+    rh = skel.keypoints["right_hip"]
+    la = skel.keypoints["left_ankle"]
+    ra = skel.keypoints["right_ankle"]
+    sh_y = (ls.y + rs.y) / 2
+    hip_y = (lh.y + rh.y) / 2
+    ankle_y = (la.y + ra.y) / 2
+    expected_hip_y = (sh_y + ankle_y) / 2
+    return hip_y - expected_hip_y
 
 
 def knee_valgus_ratio(skel: Skeleton) -> float:

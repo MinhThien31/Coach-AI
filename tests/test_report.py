@@ -31,6 +31,7 @@ def test_analysis_report_serializes_to_json():
     assert parsed["exercise"] == "squat"
     assert parsed["enriched"] is False
     assert parsed["session_summary"] is None
+    assert parsed["ai_feedback"] is None
     assert parsed["frames"] == []
 
 

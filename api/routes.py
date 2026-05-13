@@ -29,8 +29,13 @@ router = APIRouter()
 
 
 @router.get("/exercises", tags=["meta"])
-async def list_exercises() -> dict[str, list[str]]:
-    return {"exercises": sorted(EXERCISE_REGISTRY.keys())}
+async def list_exercises() -> dict[str, list[dict[str, object]]]:
+    return {
+        "exercises": [
+            rule.metadata()
+            for _, rule in sorted(EXERCISE_REGISTRY.items())
+        ],
+    }
 
 
 def _stream_to_temp(upload: UploadFile, max_bytes: int) -> str | None:

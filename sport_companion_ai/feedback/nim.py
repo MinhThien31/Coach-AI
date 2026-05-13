@@ -1,43 +1,141 @@
-"""NVIDIA NIM API-backed enricher. Adds session_summary, marks enriched=True.
+"""NVIDIA NIM API-backed enricher.
 
-Falls back silently with ENRICHMENT_FAILED warning on any failure. Never
-modifies score / passed / metrics / issue codes.
+Adds structured AI feedback for the UI and marks enriched=True. The enricher
+never modifies score, passed, metrics, issue codes, or other rule outputs.
 """
+from __future__ import annotations
+
+import json
+import re
 import time
 
 import httpx
+from pydantic import ValidationError
 
-from sport_companion_ai.report import AnalysisReport, AnalysisWarning
+from sport_companion_ai.report import AiFeedback, AnalysisReport, AnalysisWarning
 
 
 NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
+DEFAULT_NIM_MODEL = "qwen/qwen3-next-80b-a3b-instruct"
+
+JOINTS_FOR_PROMPT: list[tuple[str, str, tuple[str, ...]]] = [
+    ("head_neck", "Đầu & Cổ", ("nose", "left_ear", "right_ear")),
+    ("right_shoulder", "Vai phải", ("right_shoulder",)),
+    ("left_shoulder", "Vai trái", ("left_shoulder",)),
+    ("right_elbow", "Cùi chỏ phải", ("right_elbow",)),
+    ("left_elbow", "Cùi chỏ trái", ("left_elbow",)),
+    ("right_wrist", "Cổ tay phải", ("right_wrist",)),
+    ("left_wrist", "Cổ tay trái", ("left_wrist",)),
+    ("right_hip", "Hông phải", ("right_hip",)),
+    ("left_hip", "Hông trái", ("left_hip",)),
+    ("right_knee", "Đầu gối phải", ("right_knee",)),
+    ("left_knee", "Đầu gối trái", ("left_knee",)),
+    ("right_ankle", "Cổ chân phải", ("right_ankle",)),
+    ("left_ankle", "Cổ chân trái", ("left_ankle",)),
+]
+
+
+def _joint_visibility_summary(report: AnalysisReport) -> list[dict[str, object]]:
+    out: list[dict[str, object]] = []
+    for key, title, names in JOINTS_FOR_PROMPT:
+        values: list[float] = []
+        for frame in report.frames:
+            if frame.skeleton is None:
+                continue
+            for name in names:
+                point = frame.skeleton.keypoints.get(name)
+                if point is not None:
+                    values.append(point.visibility)
+        confidence = int(round(sum(values) / len(values) * 100)) if values else None
+        out.append({"key": key, "title": title, "confidence": confidence})
+    return out
 
 
 def _build_prompt(report: AnalysisReport) -> str:
-    issue_lines = []
-    for rep in report.reps:
-        for issue in rep.issues:
-            issue_lines.append(
-                f"- rep {rep.rep_index} ({issue.severity}): {issue.code} — metrics: {rep.metrics}"
-            )
-    issues_block = "\n".join(issue_lines) if issue_lines else "(không có lỗi)"
+    reps_payload = [
+        {
+            "rep_index": rep.rep_index,
+            "score": rep.score,
+            "passed": rep.passed,
+            "inconclusive": rep.inconclusive,
+            "metrics": rep.metrics,
+            "issues": [
+                {
+                    "code": issue.code,
+                    "severity": issue.severity,
+                    "message_vi": issue.message_vi,
+                    "recommendation": issue.recommendation,
+                    "frame_indices": issue.frame_indices,
+                }
+                for issue in rep.issues
+            ],
+        }
+        for rep in report.reps
+    ]
+    payload = {
+        "exercise": report.exercise,
+        "total_reps": report.total_reps,
+        "passed_reps": report.passed_reps,
+        "avg_score": report.avg_score,
+        "reps": reps_payload,
+        "warnings": [warning.model_dump() for warning in report.warnings],
+        "joint_visibility": _joint_visibility_summary(report),
+    }
 
     return (
-        f"Bạn là HLV gym tiếng Việt. Dựa trên dữ liệu sau, viết 2-4 câu tóm tắt "
-        f"buổi tập, ghi nhận điều tốt và đề xuất 1-2 cải thiện cụ thể. "
-        f"Tránh số liệu thô, dùng giọng thân thiện.\n\n"
-        f"Bài: {report.exercise}\n"
-        f"Tổng rep: {report.total_reps}, đạt: {report.passed_reps}, điểm TB: {report.avg_score:.0f}\n"
-        f"Lỗi:\n{issues_block}"
+        "Bạn là AI huấn luyện viên thể hình tiếng Việt. Hãy phân tích kỹ dữ liệu "
+        "pose/rule engine bên dưới và trả về DUY NHẤT một JSON object hợp lệ, không markdown.\n\n"
+        "Yêu cầu:\n"
+        "- Không sao chép máy móc issue message; hãy diễn giải tự nhiên, cụ thể theo số liệu.\n"
+        "- aspects là các mục kỹ thuật chính cần hiển thị trong tab Tổng quan.\n"
+        "- joint_analysis là nhận xét từng khớp dựa trên joint_visibility và issue liên quan.\n"
+        "- priority_items và suggestions là đề xuất sửa lỗi có thể hành động ngay.\n"
+        "- status chỉ dùng một trong: good, warning, critical, unknown.\n"
+        "- score là số 0-100 hoặc null; confidence là số 0-100 hoặc null.\n\n"
+        "Schema JSON bắt buộc:\n"
+        "{"
+        "\"overall_summary\":\"string\","
+        "\"aspects\":[{\"key\":\"string\",\"title\":\"string\",\"status\":\"good|warning|critical|unknown\","
+        "\"score\":80,\"actual\":\"string\",\"ideal\":\"string\",\"message\":\"string\",\"recommendation\":\"string\"}],"
+        "\"joint_analysis\":[{\"key\":\"string\",\"title\":\"string\",\"status\":\"good|warning|critical|unknown\","
+        "\"confidence\":90,\"message\":\"string\"}],"
+        "\"priority_items\":[{\"title\":\"string\",\"message\":\"string\",\"recommendation\":\"string\"}],"
+        "\"suggestions\":[\"string\"]"
+        "}\n\n"
+        f"Dữ liệu phân tích:\n{json.dumps(payload, ensure_ascii=False)}"
     )
+
+
+def _extract_json_object(text: str) -> dict:
+    cleaned = text.strip()
+    fenced = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", cleaned)
+    if fenced:
+        cleaned = fenced.group(1)
+    start = cleaned.find("{")
+    if start == -1:
+        raise ValueError("NIM response did not contain a JSON object")
+
+    decoder = json.JSONDecoder()
+    try:
+        data, _ = decoder.raw_decode(cleaned[start:])
+    except json.JSONDecodeError:
+        end = cleaned.rfind("}")
+        if end == -1 or end <= start:
+            raise
+        data = json.loads(cleaned[start:end + 1])
+    if isinstance(data, str):
+        data = _extract_json_object(data)
+    if not isinstance(data, dict):
+        raise ValueError("NIM response JSON root must be an object")
+    return data
 
 
 class NvidiaNimEnricher:
     def __init__(
         self,
         api_key: str,
-        model: str = "qwen/qwen3-next-80b-a3b-instruct",
-        timeout_s: float = 30.0,
+        model: str = DEFAULT_NIM_MODEL,
+        timeout_s: float = 90.0,
         max_retries: int = 1,
         backoff_s: float = 1.0,
     ):
@@ -55,10 +153,19 @@ class NvidiaNimEnricher:
         if text is None:
             report.warnings.append(AnalysisWarning(
                 code="ENRICHMENT_FAILED",
-                message_vi="LLM enrichment thất bại — fallback về template",
+                message_vi="LLM enrichment thất bại - không có phân tích AI",
             ))
             return report
-        report.session_summary = text.strip()
+
+        try:
+            feedback = AiFeedback.model_validate(_extract_json_object(text))
+        except (ValueError, json.JSONDecodeError, ValidationError):
+            report.session_summary = text.strip()
+            report.enriched = True
+            return report
+
+        report.ai_feedback = feedback
+        report.session_summary = feedback.overall_summary or None
         report.enriched = True
         return report
 
@@ -78,16 +185,24 @@ class NvidiaNimEnricher:
         body = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.4,
-            "max_tokens": 400,
+            "temperature": 0.2,
+            "max_tokens": 4000,
             "stream": False,
+            "response_format": {"type": "json_object"},
         }
         with httpx.Client(timeout=self.timeout_s) as client:
             r = client.post(f"{NIM_BASE_URL}/chat/completions", headers=headers, json=body)
+            if r.status_code == 400:
+                body.pop("response_format", None)
+                r = client.post(f"{NIM_BASE_URL}/chat/completions", headers=headers, json=body)
             if r.status_code >= 400:
                 raise httpx.HTTPError(f"NIM returned {r.status_code}")
             data = r.json()
             try:
-                return data["choices"][0]["message"]["content"]
+                message = data["choices"][0]["message"]
+                content = message.get("content") or message.get("reasoning_content")
+                if not content:
+                    raise ValueError("empty NIM response content")
+                return content
             except (KeyError, IndexError, TypeError) as exc:
                 raise ValueError("unexpected NIM response shape") from exc
