@@ -1137,18 +1137,18 @@
 
       function normalizeAiFeedback(report) {
         if (report.ai_feedback) {
-          return report;
+          return ensureAiFeedbackContent(report);
         }
         const parsed = parseMaybeJsonObject(report.session_summary);
         if (!parsed) {
-          return report;
+          return ensureAiFeedbackContent(report);
         }
         const looksStructured = Array.isArray(parsed.aspects)
           || Array.isArray(parsed.joint_analysis)
           || Array.isArray(parsed.priority_items)
           || Array.isArray(parsed.suggestions);
         if (!looksStructured) {
-          return report;
+          return ensureAiFeedbackContent(report);
         }
         report.ai_feedback = {
           overall_summary: parsed.overall_summary || "",
@@ -1156,6 +1156,158 @@
           joint_analysis: Array.isArray(parsed.joint_analysis) ? parsed.joint_analysis : [],
           priority_items: Array.isArray(parsed.priority_items) ? parsed.priority_items : [],
           suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+        };
+        report.session_summary = report.ai_feedback.overall_summary || report.session_summary;
+        return ensureAiFeedbackContent(report);
+      }
+
+      function allIssues(report) {
+        return (report.reps || []).flatMap((rep) => rep.issues || []);
+      }
+
+      function issueStatus(issue) {
+        if (issue.severity === "HIGH") {
+          return "critical";
+        }
+        if (issue.severity === "MEDIUM") {
+          return "warning";
+        }
+        return "unknown";
+      }
+
+      function fallbackAspects(report, issues) {
+        const score = clamp(Math.round(report.avg_score || 0), 0, 100);
+        if (issues.length) {
+          return issues.slice(0, 4).map((issue, index) => ({
+            key: issue.code || `issue_${index}`,
+            title: issue.code ? issue.code.replaceAll("_", " ") : "Kỹ thuật cần chỉnh",
+            status: issueStatus(issue),
+            score: Math.max(0, score - index * 4),
+            actual: issue.message_vi || "Có dấu hiệu cần kiểm tra",
+            ideal: "Thực hiện ổn định, đúng biên độ và đúng hướng chuyển động",
+            message: issue.message_vi || "",
+            recommendation: issue.recommendation || "Giảm tốc độ, quay rõ toàn thân và kiểm soát lại kỹ thuật.",
+          }));
+        }
+        const total = report.total_reps || 0;
+        const passed = report.passed_reps || 0;
+        return [
+          {
+            key: "overall_form",
+            title: "Kỹ thuật tổng thể",
+            status: "good",
+            score,
+            actual: total ? `${passed}/${total} lượt đạt` : "Không phát hiện lỗi chính",
+            ideal: "Các lượt thực hiện đạt yêu cầu của rule engine",
+            message: `${displayExercise(report.exercise)} đang đạt điểm rất tốt; hệ thống không phát hiện lỗi kỹ thuật lớn trong lượt phân tích này.`,
+            recommendation: "Duy trì cùng nhịp thực hiện và góc quay toàn thân để theo dõi ổn định hơn.",
+          },
+          {
+            key: "movement_control",
+            title: "Kiểm soát chuyển động",
+            status: "good",
+            score,
+            actual: "Chuyển động ổn định trong các keyframe",
+            ideal: "Giữ thân người, tay/chân và nhịp chuyển động nhất quán",
+            message: "Các mốc chuyển động chính không tạo cảnh báo, nên phần này được đánh giá đạt.",
+            recommendation: "Tiếp tục tập ở tốc độ vừa phải trước khi tăng cường độ.",
+          },
+          {
+            key: "tracking_quality",
+            title: "Chất lượng nhận diện",
+            status: "good",
+            score: report.frames?.length ? 90 : null,
+            actual: report.frames?.length ? `${report.frames.length} frames có dữ liệu` : "Không có dữ liệu frame chi tiết",
+            ideal: "Video sáng, thấy toàn thân và ít bị che khuất",
+            message: "Skeleton đủ để hệ thống dựng playback và đánh giá lượt tập.",
+            recommendation: "Khi quay lần sau, đặt camera ngang người và tránh cắt mất tay/chân.",
+          },
+        ];
+      }
+
+      const FALLBACK_JOINTS = [
+        ["head_neck", "Đầu & cổ", ["nose", "left_ear", "right_ear"]],
+        ["shoulders", "Vai", ["left_shoulder", "right_shoulder"]],
+        ["elbows", "Khuỷu tay", ["left_elbow", "right_elbow"]],
+        ["wrists", "Cổ tay", ["left_wrist", "right_wrist"]],
+        ["hips", "Hông", ["left_hip", "right_hip"]],
+        ["knees", "Đầu gối", ["left_knee", "right_knee"]],
+        ["ankles", "Cổ chân", ["left_ankle", "right_ankle"]],
+      ];
+
+      function averageVisibility(report, names) {
+        const values = [];
+        for (const frame of report.frames || []) {
+          const points = frame.skeleton?.keypoints || {};
+          for (const name of names) {
+            const visibility = points[name]?.visibility;
+            if (typeof visibility === "number") {
+              values.push(visibility);
+            }
+          }
+        }
+        if (!values.length) {
+          return null;
+        }
+        return clamp(Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100), 0, 100);
+      }
+
+      function fallbackJoints(report) {
+        return FALLBACK_JOINTS.map(([key, title, names]) => {
+          const confidence = averageVisibility(report, names);
+          const status = confidence == null ? "unknown" : confidence >= 70 ? "good" : confidence >= 45 ? "warning" : "critical";
+          return {
+            key,
+            title,
+            status,
+            confidence,
+            message: confidence == null
+              ? "Không đủ keypoint để tính độ rõ cho nhóm khớp này."
+              : confidence >= 70
+                ? "Keypoint rõ, đủ tin cậy để tham chiếu chuyển động."
+                : "Keypoint hơi thiếu ổn định; nên quay sáng hơn và tránh che khuất.",
+          };
+        });
+      }
+
+      function fallbackSuggestions(report, issues) {
+        if (issues.length) {
+          return [...new Set(issues.map((issue) => issue.recommendation).filter(Boolean))].slice(0, 4);
+        }
+        return [
+          `Giữ form hiện tại cho ${displayExercise(report.exercise)} vì rule engine chưa phát hiện lỗi chính.`,
+          "Quay thêm 1-2 góc khác nếu muốn kiểm tra sâu hơn về biên độ và hướng chuyển động.",
+          "Khi đã ổn định ở tốc độ hiện tại, tăng độ khó từng bước thay vì tăng mạnh ngay.",
+        ];
+      }
+
+      function buildFallbackFeedback(report) {
+        const issues = allIssues(report);
+        const score = clamp(Math.round(report.avg_score || 0), 0, 100);
+        return {
+          overall_summary: issues.length
+            ? `${displayExercise(report.exercise)} đạt ${score}/100. Có một vài điểm kỹ thuật cần chỉnh để chuyển động ổn định hơn.`
+            : `${displayExercise(report.exercise)} đạt ${score}/100. Hệ thống không phát hiện lỗi kỹ thuật chính trong lượt phân tích này.`,
+          aspects: fallbackAspects(report, issues),
+          joint_analysis: fallbackJoints(report),
+          priority_items: issues.slice(0, 3).map((issue) => ({
+            title: issue.code ? issue.code.replaceAll("_", " ") : "Kỹ thuật cần chỉnh",
+            message: issue.message_vi || "",
+            recommendation: issue.recommendation || "",
+          })),
+          suggestions: fallbackSuggestions(report, issues),
+        };
+      }
+
+      function ensureAiFeedbackContent(report) {
+        const fallback = buildFallbackFeedback(report);
+        const feedback = report.ai_feedback || {};
+        report.ai_feedback = {
+          overall_summary: feedback.overall_summary || fallback.overall_summary,
+          aspects: feedback.aspects?.length ? feedback.aspects : fallback.aspects,
+          joint_analysis: feedback.joint_analysis?.length ? feedback.joint_analysis : fallback.joint_analysis,
+          priority_items: feedback.priority_items?.length ? feedback.priority_items : fallback.priority_items,
+          suggestions: feedback.suggestions?.length ? feedback.suggestions : fallback.suggestions,
         };
         report.session_summary = report.ai_feedback.overall_summary || report.session_summary;
         return report;

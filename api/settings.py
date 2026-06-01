@@ -7,6 +7,12 @@ from pathlib import Path
 
 
 DEFAULT_DOTENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+DEFAULT_CORS_ORIGINS = (
+    "https://minhthien.io.vn,"
+    "https://www.minhthien.io.vn,"
+    "http://localhost:3000,"
+    "http://localhost:5173"
+)
 
 
 def _read_dotenv(path: str | os.PathLike[str] | None) -> dict[str, str]:
@@ -50,6 +56,18 @@ def _config_value(name: str, dotenv: dict[str, str], default: str) -> str:
     return dotenv.get(name, default)
 
 
+def _parse_cors_origins(value: str) -> tuple[str, ...]:
+    if not value.strip():
+        return ()
+
+    origins = tuple(o.strip() for o in value.split(",") if o.strip())
+    if "*" in origins:
+        return origins
+
+    required = tuple(o.strip() for o in DEFAULT_CORS_ORIGINS.split(",") if o.strip())
+    return tuple(dict.fromkeys((*origins, *required)))
+
+
 @dataclass(frozen=True)
 class Settings:
     max_upload_mb: int
@@ -64,7 +82,7 @@ class Settings:
         dotenv_path: str | os.PathLike[str] | None = DEFAULT_DOTENV_PATH,
     ) -> "Settings":
         dotenv = _read_dotenv(dotenv_path)
-        cors_origins = _config_value("API_CORS_ORIGINS", dotenv, "*")
+        cors_origins = _config_value("API_CORS_ORIGINS", dotenv, DEFAULT_CORS_ORIGINS)
         nvidia_api_key = _config_value("NVIDIA_API_KEY", dotenv, "")
         nvidia_nim_model = _config_value(
             "NVIDIA_NIM_MODEL",
@@ -74,11 +92,7 @@ class Settings:
         return cls(
             max_upload_mb=int(_config_value("API_MAX_UPLOAD_MB", dotenv, "100")),
             max_video_seconds=int(_config_value("API_MAX_VIDEO_SECONDS", dotenv, "60")),
-            cors_origins=tuple(
-                o.strip()
-                for o in cors_origins.split(",")
-                if o.strip()
-            ),
+            cors_origins=_parse_cors_origins(cors_origins),
             nvidia_api_key=nvidia_api_key or None,
             nvidia_nim_model=nvidia_nim_model,
         )

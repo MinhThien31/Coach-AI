@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from api.settings import Settings
+from api.settings import DEFAULT_CORS_ORIGINS, Settings
 
 
 def test_defaults_when_no_env(monkeypatch):
@@ -13,7 +13,7 @@ def test_defaults_when_no_env(monkeypatch):
     s = Settings.from_env(dotenv_path=None)
     assert s.max_upload_mb == 100
     assert s.max_video_seconds == 60
-    assert s.cors_origins == ("*",)
+    assert s.cors_origins == tuple(DEFAULT_CORS_ORIGINS.split(","))
     assert s.nvidia_api_key is None
     assert s.nvidia_nim_model == "qwen/qwen3-next-80b-a3b-instruct"
 
@@ -27,7 +27,8 @@ def test_overrides_from_env(monkeypatch):
     s = Settings.from_env(dotenv_path=None)
     assert s.max_upload_mb == 25
     assert s.max_video_seconds == 30
-    assert s.cors_origins == ("http://localhost:3000", "http://localhost:5173")
+    assert s.cors_origins[:2] == ("http://localhost:3000", "http://localhost:5173")
+    assert "https://www.minhthien.io.vn" in s.cors_origins
     assert s.nvidia_api_key == "nvapi-test"
     assert s.nvidia_nim_model == "meta/llama-3.3-70b-instruct"
 
@@ -66,7 +67,8 @@ def test_loads_dotenv_when_env_missing(monkeypatch, tmp_path):
 
     assert s.max_upload_mb == 55
     assert s.max_video_seconds == 45
-    assert s.cors_origins == ("http://localhost:8080",)
+    assert s.cors_origins[0] == "http://localhost:8080"
+    assert "https://www.minhthien.io.vn" in s.cors_origins
     assert s.nvidia_api_key == "nvapi-from-dotenv"
     assert s.nvidia_nim_model == "deepseek-ai/deepseek-r1"
 
